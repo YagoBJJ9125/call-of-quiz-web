@@ -1,0 +1,93 @@
+  :root {
+    /* Base */
+    --bg-deepest: #161210;
+    --bg-deep:    #1c1815;
+    --bg-card:    #221d18;
+    --bg-elev:    #2b251f;
+    --bg-hover:   #322a22;
+
+    /* Testi */
+    --text-primary:   #e8dfd1;
+    --text-secondary: #b5a892;
+    --text-muted:     #7a6f5c;
+    --text-dim:       #4a4338;
+
+    /* Accenti */
+    --amber:        #d49a3f;
+    --amber-bright: #e8b556;
+    --amber-dim:    #8c6628;
+    --sage:         #7fa074;
+    --sage-bright:  #9bc190;
+    --sage-dim:     #4d6647;
+    --rust:         #c2604a;
+    --rust-bright:  #d8755d;
+    --rust-dim:     #82402f;
+
+    /* Strutture */
+    --border-soft:   rgba(232, 223, 209, 0.08);
+    --border-medium: rgba(232, 223, 209, 0.15);
+    --border-strong: rgba(232, 223, 209, 0.3);
+
+    --shadow-card:   0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-deep:   0 16px 48px rgba(0, 0, 0, 0.6);
+
+    /* Typografia */
+    --font-display: 'EB Garamond', 'Garamond', 'Cormorant Garamond', serif;
+    --font-body:    'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono:    'JetBrains Mono', 'SF Mono', Consolas, monospace;
+    --font-hud:     'JetBrains Mono', 'SF Mono', Consolas, monospace;
+
+    /* Alias usati da componenti recenti (scritto/analisi). Definiti qui per
+       essere tematizzabili dal tema chiaro. Default = tema scuro. */
+    --bg:          #161210;
+    --text:        #e8dfd1;
+    --border:      rgba(232, 223, 209, 0.15);
+    --neon-cyan:   #34e5ff;
+    --neon-violet: #a06bff;
+    --neon-lime:   #b6ff3d;
+    --neon-gold:   #ffd23d;
+  }
+
+  /* Reset minimale */
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    height: 100%;
+  }
+
+  body {
+    background: var(--bg-deepest);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  /* Texture sottile di fondo per "atmosfera" notturna */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(212, 154, 63, 0.04) 0%, transparent 50%),
+      radial-gradient(circle at 85% 80%, rgba(127, 160, 116, 0.03) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Scrollbar discreta */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--bg-deep); }
+  ::-webkit-scrollbar-thumb {
+    background: var(--bg-elev);
+    border-radius: 6px;
+    border: 2px solid var(--bg-deep);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--bg-hover); }

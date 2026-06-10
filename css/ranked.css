@@ -1,0 +1,780 @@
+/* ═══════════════════════════════════════════════════════
+   RANKED — Stili dedicati per modalità Ranked
+   Variabili --rk-base e --rk-accent settate inline in base alla lega.
+   ═══════════════════════════════════════════════════════ */
+
+.ranked-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.rk-page-header {
+  margin-bottom: 4px;
+}
+.rk-titolo-nota {
+  font-size: 0.5em;
+  font-weight: 400;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  vertical-align: middle;
+}
+
+/* ── Card rank principale ── */
+.rk-rank-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: stretch;
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--rk-base, #8B4513) 18%, var(--bg-card)) 0%,
+    var(--bg-card) 70%);
+  border: 1px solid color-mix(in srgb, var(--rk-base, #8B4513) 40%, var(--border));
+  border-radius: 12px;
+  padding: 14px 26px 14px 38px;
+  box-shadow: 0 2px 16px color-mix(in srgb, var(--rk-base, #8B4513) 12%, transparent);
+}
+
+.rk-rank-emblema {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.rk-emblema-cerchio {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle,
+    var(--rk-accent, #B87333) 0%,
+    var(--rk-base, #8B4513) 70%);
+  box-shadow:
+    inset 0 -4px 12px rgba(0,0,0,0.25),
+    0 4px 18px color-mix(in srgb, var(--rk-base) 50%, transparent);
+  border: 2px solid color-mix(in srgb, var(--rk-accent) 70%, white);
+}
+.rk-emblema-icona {
+  font-size: 42px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+  line-height: 1;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Avanzamento banca dati del save (Fase 9)
+   ═══════════════════════════════════════════════════════ */
+.rk-banca-card {
+  margin: 0 0 18px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg,
+    rgba(52,229,255,0.08) 0%,
+    var(--bg-card, #181822) 70%);
+  border: 1px solid rgba(52,229,255,0.30);
+  border-radius: 12px;
+}
+.rk-banca-h {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.rk-banca-titolo { display: flex; align-items: baseline; gap: 12px; }
+.rk-banca-label {
+  font-family: var(--font-hud, 'JetBrains Mono', monospace);
+  font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase;
+  color: var(--neon-cyan, #34E5FF);
+}
+.rk-banca-save {
+  font-family: 'Cinzel', 'Trajan Pro', serif;
+  font-size: 17px; font-weight: 700; letter-spacing: 0.04em;
+  color: var(--text-primary, #E8DFD1);
+}
+.rk-banca-perc {
+  font-family: var(--font-hud, 'JetBrains Mono', monospace);
+  font-size: 13px; color: var(--text-secondary, #b8aea0);
+}
+.rk-banca-perc strong { font-size: 22px; font-weight: 700; margin-right: 4px; }
+.rk-banca-perc strong.cop-alta   { color: var(--neon-lime,   #b6ff3d); }
+.rk-banca-perc strong.cop-media  { color: var(--neon-gold,   #ffd23d); }
+.rk-banca-perc strong.cop-bassa  { color: #ff7a9e; }
+.rk-banca-perc strong.cop-nulla  { color: var(--text-muted,  #8a8276); }
+.rk-banca-bar {
+  height: 12px; border-radius: 6px;
+  background: rgba(232,223,209,0.06);
+  overflow: hidden; margin-bottom: 8px;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.4);
+}
+.rk-banca-fill { height: 100%; border-radius: 6px; transition: width 0.5s ease; }
+.rk-banca-fill.cop-alta   { background: linear-gradient(90deg, var(--sage,#7fa074), var(--neon-lime,#b6ff3d)); box-shadow: 0 0 14px var(--neon-lime,#b6ff3d); }
+.rk-banca-fill.cop-media  { background: linear-gradient(90deg, var(--amber,#d49a3f), var(--neon-gold,#ffd23d)); box-shadow: 0 0 12px var(--neon-gold,#ffd23d); }
+.rk-banca-fill.cop-bassa  { background: linear-gradient(90deg, var(--rust,#c2604a), var(--neon-magenta,#ff4d9e)); box-shadow: 0 0 10px #ff4d9e; }
+.rk-banca-fill.cop-nulla  { background: rgba(232,223,209,0.10); }
+.rk-banca-meta {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  font-family: var(--font-hud, 'JetBrains Mono', monospace);
+  font-size: 12px; color: var(--text-secondary, #b8aea0);
+}
+.rk-banca-meta strong { color: var(--text-primary, #E8DFD1); font-weight: 700; }
+.rk-banca-sep { opacity: 0.6; }
+.btn-rk-dettaglio {
+  margin-left: auto;
+  padding: 4px 12px !important;
+  font-size: 12px !important;
+  font-family: inherit !important;
+  border: 1px solid rgba(52,229,255,0.40) !important;
+  color: var(--neon-cyan, #34E5FF) !important;
+}
+.btn-rk-dettaglio:hover {
+  background: var(--neon-cyan, #34E5FF) !important;
+  color: #0a0a14 !important;
+  border-color: var(--neon-cyan, #34E5FF) !important;
+}
+
+/* Simbolo del rank — img da assets/ con fallback emoji
+   (riusato in ranked-home, banner promo, stats, intro leghe) */
+.rank-sym {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  vertical-align: middle;
+}
+.rank-sym img {
+  /* default: riempie il contenitore tenendosi entro un cap ragionevole */
+  width: auto;
+  height: 1em;
+  max-width: 100%;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+}
+.rank-sym .rank-sym-emoji { display: none; }
+.rank-sym-fallback .rank-sym-emoji { display: inline; }
+
+/* — Dimensioni per ciascun contesto in cui appare la stemma — */
+
+/* Cerchio rank attuale (home Ranked): quando c'è una vera immagine,
+   il cerchio sfumato sparisce e l'immagine DIVENTA lo stemma intero.
+   ATTENZIONE: serve allargare anche il box, non solo l'img, altrimenti
+   il layout grid riserva solo 90×90 e l'img va in overflow invisibile. */
+.rk-emblema-cerchio { overflow: visible; }
+.rk-emblema-cerchio .rank-sym { width: 100%; height: 100%; }
+.rk-emblema-cerchio .rank-sym img { height: 100%; width: 100%; }
+.rk-emblema-cerchio:has(.rank-sym img) {
+  width: 160px;
+  height: 160px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+/* Fallback emoji: cerchio resta visibile a dimensione originale */
+.rk-emblema-cerchio:has(.rank-sym-fallback) { width: 90px; height: 90px; }
+.rk-emblema-cerchio:has(.rank-sym-fallback) .rank-sym { width: auto; height: auto; }
+
+/* Card "Rank attuale" / "Picco raggiunto" su "I tuoi progressi" */
+.rk-st-card-ic { font-size: 22px; line-height: 1; margin-bottom: 6px; min-height: 88px; }
+.rk-st-card-ic .rank-sym img { height: 88px; width: 88px; }
+
+/* Ladder delle 7 leghe nell'intro */
+.rki-lega-emblema .rank-sym img { height: 56px; width: 56px; }
+
+/* Banner promozione/retrocessione fullscreen */
+.rk-banner-emblema .rank-sym img { height: 128px; width: 128px; }
+.rk-emblema-sub {
+  /* Chevron del sotto-livello: numero romano grande dentro una cornice
+     che riprende il colore della lega. Vuoto per Maestro (apice). */
+  font-family: 'Cinzel', 'Trajan Pro', Georgia, serif;
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0.12em;
+  color: var(--rk-accent, #B87333);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55),
+               0 0 12px color-mix(in srgb, var(--rk-accent, #B87333) 50%, transparent);
+  min-width: 56px;
+  padding: 2px 14px;
+  text-align: center;
+  border: 1.5px solid color-mix(in srgb, var(--rk-accent, #B87333) 65%, transparent);
+  border-radius: 4px;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--rk-base, #8B4513) 22%, transparent) 0%,
+    color-mix(in srgb, var(--rk-base, #8B4513) 8%,  transparent) 100%);
+  box-shadow: inset 0 0 8px color-mix(in srgb, var(--rk-base, #8B4513) 30%, transparent);
+  /* Diamanti decorativi ai lati */
+  position: relative;
+}
+.rk-emblema-sub::before,
+.rk-emblema-sub::after {
+  content: '◆';
+  font-size: 9px;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: color-mix(in srgb, var(--rk-accent, #B87333) 80%, transparent);
+}
+.rk-emblema-sub::before { left: 4px; }
+.rk-emblema-sub::after  { right: 4px; }
+.rk-emblema-sub:empty   { display: none; }
+
+.rk-rank-info { min-width: 0; }
+.rk-rank-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+.rk-rank-nome {
+  font-family: 'Cinzel', 'Trajan Pro', 'EB Garamond', serif;
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  /* Sfumatura metallica che riprende i colori della lega corrente */
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--rk-accent, #B87333) 95%, white) 0%,
+    var(--rk-accent, #B87333) 45%,
+    color-mix(in srgb, var(--rk-base, #8B4513) 80%, black) 100%);
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+          color: transparent;
+  text-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.45),
+    0 0 22px color-mix(in srgb, var(--rk-accent, #B87333) 35%, transparent);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+  line-height: 1.05;
+  margin: 4px 0 10px;
+}
+.rk-rank-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+/* ── RP box: elemento prominente nella rank card ── */
+.rk-rp-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: rgba(52, 229, 255, 0.10);
+  border: 1.5px solid rgba(52, 229, 255, 0.55);
+  box-shadow: 0 0 14px rgba(52, 229, 255, 0.18);
+  font-family: 'JetBrains Mono', monospace;
+  transition: box-shadow .2s;
+}
+.rk-rp-box:hover { box-shadow: 0 0 24px rgba(52, 229, 255, 0.32); }
+.rk-rp-val {
+  font-size: 22px;
+  font-weight: 700;
+  color: #34e5ff;
+  line-height: 1;
+}
+.rk-rp-sep { font-size: 16px; color: rgba(52,229,255,0.45); }
+.rk-rp-max { font-size: 16px; color: rgba(52,229,255,0.7); }
+.rk-rp-lbl {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: rgba(52,229,255,0.6);
+  margin-left: 2px;
+}
+.rk-rp-debt {
+  font-size: 10px;
+  color: var(--rust, #c2604a);
+  margin-left: 4px;
+}
+.rk-rp-box.rk-rp-neg {
+  background: rgba(194, 96, 74, 0.12);
+  border-color: rgba(194, 96, 74, 0.55);
+  box-shadow: 0 0 14px rgba(194, 96, 74, 0.18);
+}
+.rk-rp-box.rk-rp-neg .rk-rp-val { color: #e07060; }
+.rk-rp-box.rk-rp-neg .rk-rp-sep,
+.rk-rp-box.rk-rp-neg .rk-rp-max,
+.rk-rp-box.rk-rp-neg .rk-rp-lbl { color: rgba(194,96,74,0.6); }
+
+/* vecchie classi (streak, picco, rk-rp span legacy) */
+.rk-picco,
+.rk-streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+.rk-picco { color: var(--text-muted); }
+
+.rk-rank-progress {
+  margin-top: 14px;
+}
+.rk-rank-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-input);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.rk-rank-fill {
+  height: 100%;
+  background: linear-gradient(90deg,
+    var(--rk-base, #8B4513),
+    var(--rk-accent, #B87333));
+  transition: width 0.5s ease;
+}
+.rk-rank-progress-lbl {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.rk-rank-economia {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.rk-eco-item {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  border: 1px solid var(--border);
+}
+.rk-eco-ok { color: var(--sage); border-color: var(--sage); background: rgba(149,195,117,0.1); }
+.rk-eco-ko { color: var(--rust); border-color: var(--rust); background: rgba(184,90,64,0.1); }
+.rk-rank-protezione {
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* ── Card obiettivo ── */
+.rk-obj-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 22px;
+}
+.rk-obj-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.rk-obj-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+.rk-obj-numeri {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-top: 4px;
+  font-family: 'EB Garamond', serif;
+}
+.rk-obj-fatti {
+  font-size: 38px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.rk-obj-sep {
+  font-size: 24px;
+  color: var(--text-muted);
+}
+.rk-obj-target {
+  font-size: 24px;
+  color: var(--text-secondary);
+}
+.rk-obj-unit {
+  font-size: 14px;
+  color: var(--text-muted);
+  font-family: 'Inter', sans-serif;
+  margin-left: 6px;
+}
+.rk-obj-stato {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.rk-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+.rk-tag-ok { background: rgba(149, 195, 117, 0.15); border-color: var(--sage); color: var(--sage); }
+.rk-tag-info { background: rgba(212, 154, 63, 0.15); border-color: var(--amber); color: var(--amber-bright); }
+.rk-tag-neutral { background: var(--bg-hover); color: var(--text-secondary); }
+.rk-tag-up   { color: var(--sage); border-color: var(--sage); background: rgba(149,195,117,0.1); }
+.rk-tag-down { color: var(--rust); border-color: var(--rust); background: rgba(184, 90, 64, 0.1); }
+
+.rk-obj-bar {
+  width: 100%;
+  height: 10px;
+  background: var(--bg-input);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  border: 1px solid var(--border);
+}
+.rk-obj-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--sage) 0%, var(--amber-bright) 100%);
+  transition: width 0.4s ease;
+}
+.rk-obj-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.rk-btn-round {
+  font-size: 15px;
+  padding: 10px 22px;
+  letter-spacing: 0.02em;
+}
+
+/* ── Riepilogo 7/30 + materie deboli ── */
+.rk-recap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 14px;
+}
+.rk-recap-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.rk-recap-h {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 12px;
+}
+.rk-recap-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.rk-recap-stats strong {
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+}
+.rk-recap-rp {
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: 13px;
+  display: inline-block;
+}
+.rk-recap-rp.up { background: rgba(149,195,117,0.12); color: var(--sage); }
+.rk-recap-rp.down { background: rgba(184, 90, 64, 0.12); color: var(--rust); }
+
+.rk-errori-box {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+.rk-errori-box.has-err {
+  background: rgba(184, 90, 64, 0.1);
+  border-color: var(--rust);
+}
+.rk-errori-num {
+  font-family: 'EB Garamond', serif;
+  font-size: 30px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.rk-errori-box.has-err .rk-errori-num { color: var(--rust); }
+.rk-errori-lbl {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.rk-deboli-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 8px;
+}
+
+.rk-deboli-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rk-deboli-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 6px 10px;
+  background: var(--bg-hover);
+  border-radius: 6px;
+  border-left: 3px solid var(--rust);
+}
+.rk-deboli-list code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-primary);
+}
+.rk-deb-acc {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  color: var(--rust);
+  margin-left: auto;
+}
+.rk-deb-tot {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.rk-empty-deb {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 8px 0;
+}
+
+/* ── Bottoni di recupero (Fase 10) ── */
+.rk-btn-recupero {
+  width: 100%;
+  margin: 10px 0 8px;
+  background: linear-gradient(135deg, rgba(255,77,158,0.20), rgba(160,107,255,0.20));
+  border: 1px solid rgba(255,77,158,0.45);
+  color: var(--text-primary, #E8DFD1);
+  font-weight: 600;
+}
+.rk-btn-recupero:hover {
+  background: linear-gradient(135deg, rgba(255,77,158,0.35), rgba(160,107,255,0.30));
+  border-color: #ff4d9e;
+  box-shadow: 0 0 18px -4px #ff4d9e;
+}
+
+.rk-deboli-list li.rk-deb-row {
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 6px;
+  margin: 0 -4px;
+  transition: background 0.12s ease, transform 0.12s ease;
+}
+.rk-deboli-list li.rk-deb-row:hover {
+  background: rgba(160,107,255,0.10);
+  transform: translateX(2px);
+}
+.rk-deb-go {
+  margin-left: 8px;
+  color: var(--neon-cyan, #34E5FF);
+  font-size: 13px;
+  opacity: 0.55;
+  flex-shrink: 0;
+  transition: opacity 0.12s ease;
+}
+.rk-deboli-list li.rk-deb-row:hover .rk-deb-go { opacity: 1; }
+
+/* ── Mix bar (composizione round) ── */
+.rk-mix-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.rk-mix-h {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 10px;
+}
+.rk-mix-bar {
+  display: flex;
+  height: 28px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.rk-mix-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-primary);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rk-mix-seg.seg-nuovi       { background: color-mix(in srgb, var(--amber-bright) 35%, var(--bg-card)); }
+.rk-mix-seg.seg-review      { background: color-mix(in srgb, var(--rust) 35%, var(--bg-card)); }
+.rk-mix-seg.seg-consolidati { background: color-mix(in srgb, var(--sage) 35%, var(--bg-card)); }
+.rk-mix-note {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ── Setup dimensione round (chip inline nella card obiettivo) ── */
+.rk-round-setup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.rk-round-setup-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+.rk-chip-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.rk-chip {
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 14px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+.rk-chip:hover {
+  border-color: var(--amber-bright);
+  color: var(--text-primary);
+}
+.rk-chip.active {
+  background: color-mix(in srgb, var(--amber-bright) 18%, var(--bg-hover));
+  border-color: var(--amber-bright);
+  color: var(--amber-bright);
+}
+
+/* ── Banner transizione di rank (popup centrato) ── */
+.rk-banner-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+.rk-banner-overlay.active { display: flex; }
+.rk-banner {
+  background: linear-gradient(160deg,
+    color-mix(in srgb, var(--rk-base, #8B4513) 32%, var(--bg-card)) 0%,
+    var(--bg-card) 72%);
+  border: 2px solid var(--rk-accent, #B87333);
+  border-radius: 16px;
+  padding: 36px 48px;
+  text-align: center;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.55),
+              0 0 48px color-mix(in srgb, var(--rk-base, #8B4513) 45%, transparent);
+  animation: rkBannerIn 0.42s cubic-bezier(0.2, 0.85, 0.25, 1);
+}
+@keyframes rkBannerIn {
+  from { transform: scale(0.7); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+.rk-banner-emblema {
+  font-size: 76px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.45));
+}
+.rk-banner-tipo {
+  margin-top: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 0.22em;
+  font-weight: 600;
+}
+.rk-banner-tipo.promo { color: var(--sage); }
+.rk-banner-tipo.demo  { color: var(--rust); }
+.rk-banner-rank {
+  font-family: 'EB Garamond', serif;
+  font-size: 42px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 4px 0 8px;
+}
+.rk-banner-sub {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin-bottom: 24px;
+}
+.rk-banner-btn {
+  background: linear-gradient(90deg, var(--rk-base, #8B4513), var(--rk-accent, #B87333));
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 36px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: filter 0.15s ease;
+}
+.rk-banner-btn:hover { filter: brightness(1.12); }
+
+/* ── Picker modal (usato solo per "modifica obiettivo giornaliero") ── */
+.rk-picker { padding: 4px 0; }
+.rk-picker-desc {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}

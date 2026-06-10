@@ -1,0 +1,419 @@
+  /* ═══════════════════════════════════════════════════════
+     STUDIO — sezione fonti normative: home, elenco articoli,
+     lettore + chat IA. Tema coerente con base.css.
+     ═══════════════════════════════════════════════════════ */
+
+  /* ─── Ricerca semantica cross-fonte ─── */
+  .studio-semantica {
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 24px;
+  }
+  .studio-semantica-label {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+  }
+  .studio-semantica-riga { display: flex; gap: 10px; }
+  .studio-semantica-riga .studio-ricerca { max-width: none; }
+
+  .studio-sem-risultati {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+  }
+  .studio-sem-risultati:not(:empty) { margin-top: 14px; }
+  .studio-sem-attesa { padding: 6px 2px; color: var(--text-muted); font-size: 13px; }
+  .studio-sem-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: border-color .12s, transform .12s;
+  }
+  .studio-sem-card:hover { border-color: var(--amber-dim); transform: translateY(-1px); }
+  .studio-sem-fonte {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--amber);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+  .studio-sem-art { font-size: 13.5px; color: var(--text-primary); margin: 4px 0; line-height: 1.35; }
+  .studio-sem-motivo { font-size: 12px; color: var(--text-secondary); font-style: italic; }
+
+  /* Chip "pending" nella chat (da quiz o da ricerca semantica) */
+  .studio-sugg-pending {
+    background: var(--amber-dim) !important;
+    border-color: var(--amber) !important;
+    color: #fff !important;
+    font-weight: 600;
+  }
+
+  /* ─── Home: fonti per materia ─── */
+  .studio-home { display: flex; flex-direction: column; gap: 28px; }
+
+  .studio-materia-titolo {
+    font-family: var(--font-display);
+    font-size: 20px;
+    color: var(--amber-bright);
+    border-bottom: 1px solid var(--border-soft);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+
+  .studio-fonti-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 14px;
+  }
+
+  .studio-fonte-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 16px 18px;
+    cursor: pointer;
+    transition: border-color .15s, transform .15s, box-shadow .15s;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .studio-fonte-card:hover {
+    border-color: var(--amber-dim);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card);
+  }
+
+  .studio-fonte-breve {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .studio-fonte-nome { font-size: 12px; color: var(--amber); font-family: var(--font-mono); }
+  .studio-fonte-desc { font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; flex: 1; }
+  .studio-fonte-meta { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+
+  /* ─── Fonte: ricerca + elenco articoli ─── */
+  .studio-breadcrumb { margin-bottom: 8px; }
+
+  .studio-ricerca-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 4px 0 14px;
+  }
+  .studio-ricerca {
+    flex: 1;
+    max-width: 560px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-medium);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 14px;
+    outline: none;
+  }
+  .studio-ricerca:focus { border-color: var(--amber-dim); }
+  .studio-ricerca-conta { font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
+
+  .studio-art-lista {
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .studio-art-riga {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-soft);
+    cursor: pointer;
+    transition: background .12s;
+  }
+  .studio-art-riga:last-child { border-bottom: none; }
+  .studio-art-riga:hover { background: var(--bg-hover); }
+  .studio-art-num {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--amber);
+    min-width: 86px;
+    flex-shrink: 0;
+  }
+  .studio-art-titolo { font-size: 13.5px; color: var(--text-primary); }
+  .studio-art-titolo em { color: var(--text-muted); }
+  .studio-vuoto { padding: 24px; color: var(--text-muted); text-align: center; }
+
+  /* ─── Articolo: lettore + chat ─── */
+  .studio-art-page { display: flex; flex-direction: column; height: calc(100vh - 110px); }
+
+  .studio-art-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+  }
+  .studio-art-nav { display: flex; gap: 8px; }
+
+  .studio-split {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(320px, 5fr);
+    gap: 16px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .studio-lettore {
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 22px 26px;
+    overflow-y: auto;
+  }
+  .studio-lettore-fonte {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--amber);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: 6px;
+  }
+  .studio-lettore-titolo {
+    font-family: var(--font-display);
+    font-size: 22px;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    line-height: 1.3;
+  }
+  .studio-lettore-testo { font-size: 14.5px; line-height: 1.7; color: var(--text-primary); }
+  .studio-lettore-testo p { margin-bottom: 10px; }
+  .studio-comma::first-line { font-weight: inherit; }
+  .studio-comma { text-indent: 0; }
+  .studio-lettera { padding-left: 22px; }
+  .studio-par { color: var(--text-secondary); }
+
+  /* Chat */
+  .studio-chatbox {
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .studio-chat-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-soft);
+    font-family: var(--font-display);
+    font-size: 15px;
+    color: var(--amber-bright);
+    flex-shrink: 0;
+  }
+  .studio-chat-stato { font-size: 11px; color: var(--rust-bright); font-family: var(--font-body); }
+
+  .studio-chat-msgs {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+  }
+  .studio-msg {
+    max-width: 92%;
+    padding: 9px 13px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  .studio-msg p { margin: 0 0 6px; }
+  .studio-msg p:last-child { margin-bottom: 0; }
+  .studio-msg ul { margin: 4px 0 6px 18px; }
+  .studio-msg-user {
+    align-self: flex-end;
+    background: var(--amber-dim);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  .studio-msg-ai {
+    align-self: flex-start;
+    background: var(--bg-elev);
+    color: var(--text-primary);
+    border-bottom-left-radius: 4px;
+  }
+  .studio-msg-pensando { opacity: .6; font-style: italic; animation: studioPulse 1.2s ease-in-out infinite; }
+  @keyframes studioPulse { 0%,100% { opacity: .45; } 50% { opacity: .8; } }
+
+  .studio-chat-suggerimenti {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 12px;
+    border-top: 1px solid var(--border-soft);
+    flex-shrink: 0;
+  }
+  .studio-chat-suggerimenti button {
+    background: var(--bg-elev);
+    border: 1px solid var(--border-soft);
+    border-radius: 999px;
+    color: var(--text-secondary);
+    font-size: 11.5px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: border-color .12s, color .12s;
+    font-family: var(--font-body);
+  }
+  .studio-chat-suggerimenti button:hover { border-color: var(--amber-dim); color: var(--text-primary); }
+
+  .studio-chat-input {
+    display: flex;
+    gap: 8px;
+    padding: 10px 12px;
+    border-top: 1px solid var(--border-soft);
+    flex-shrink: 0;
+  }
+  .studio-chat-input textarea {
+    flex: 1;
+    background: var(--bg-deep);
+    border: 1px solid var(--border-medium);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 13px;
+    padding: 8px 12px;
+    resize: none;
+    outline: none;
+  }
+  .studio-chat-input textarea:focus { border-color: var(--amber-dim); }
+
+  /* ─── Overlay Studio sopra una batteria in corso ─── */
+  .studio-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 8, 6, 0.78);
+    backdrop-filter: blur(3px);
+    z-index: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+  }
+  .studio-overlay-box {
+    background: var(--bg-deep);
+    border: 1px solid var(--border-medium);
+    border-radius: 16px;
+    box-shadow: var(--shadow-deep);
+    width: min(1280px, 100%);
+    height: min(860px, 100%);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .studio-overlay-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border-soft);
+    background: var(--bg-card);
+    flex-shrink: 0;
+  }
+  .studio-overlay-titolo {
+    font-family: var(--font-display);
+    font-size: 17px;
+    color: var(--amber-bright);
+  }
+  .studio-overlay-nota { font-family: var(--font-body); font-size: 11.5px; color: var(--text-muted); }
+  .studio-overlay-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px 22px;
+    min-height: 0;
+  }
+  /* Dentro l'overlay il lettore+chat riempiono il riquadro, non la viewport */
+  .studio-overlay .studio-art-page { height: 100%; }
+
+  /* ─── Flashcard ─── */
+  .studio-flash-home {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+  }
+  .studio-flash-home-info { font-size: 13.5px; color: var(--text-secondary); }
+  .studio-flash-home-info strong { color: var(--amber-bright); }
+
+  .studio-flash-card {
+    max-width: 640px;
+    margin: 24px auto;
+    background: var(--bg-card);
+    border: 1px solid var(--border-medium);
+    border-radius: 16px;
+    padding: 26px 30px;
+    box-shadow: var(--shadow-card);
+  }
+  .studio-flash-domanda {
+    font-family: var(--font-display);
+    font-size: 20px;
+    color: var(--text-primary);
+    margin: 14px 0;
+    line-height: 1.4;
+  }
+  .studio-flash-risposta {
+    background: var(--bg-elev);
+    border-left: 3px solid var(--sage);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+  }
+  .studio-flash-azioni { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .studio-flash-ok { background: var(--sage-dim); color: #fff; border: 1px solid var(--sage); }
+  .studio-flash-ok:hover { background: var(--sage); }
+  .studio-flash-ko { background: var(--rust-dim); color: #fff; border: 1px solid var(--rust); }
+  .studio-flash-ko:hover { background: var(--rust); }
+
+  /* ─── Ripasso (heat-map errori → articoli) ─── */
+  .studio-ripasso { margin-bottom: 28px; }
+  .studio-rip-stat {
+    font-size: 11.5px;
+    color: var(--rust-bright);
+    font-family: var(--font-mono);
+    margin-top: 4px;
+  }
+
+  /* Bottone "Studia la teoria" nel feedback del quiz */
+  .quiz-studia-teoria {
+    display: inline-block;
+    margin-left: 12px;
+    font-size: 12px;
+    padding: 3px 12px;
+  }
+
+  /* ─── Mobile: pannelli impilati ─── */
+  @media (max-width: 900px) {
+    .studio-art-page { height: auto; }
+    .studio-split { grid-template-columns: 1fr; }
+    .studio-lettore { max-height: 52vh; }
+    .studio-chatbox { min-height: 420px; max-height: 70vh; }
+  }

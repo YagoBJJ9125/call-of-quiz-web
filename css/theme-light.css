@@ -1,0 +1,123 @@
+/* ═══════════════════════════════════════════════════════
+   TEMA CHIARO — stile "Claude": fondo crema caldo, testo scuro
+   morbido, accento terracotta, titoli serif (Source Serif).
+   Attivo con  <body class="theme-light">.  Override delle variabili
+   CSS + pochi ritocchi strutturali (lo shell usa quasi solo var()).
+   ═══════════════════════════════════════════════════════ */
+
+body.theme-light {
+  /* Superfici (crema Claude) */
+  --bg-deepest: #faf9f5;
+  --bg-deep:    #f0eee6;
+  --bg-card:    #ffffff;
+  --bg-elev:    #ffffff;
+  --bg-hover:   #f0ede3;
+
+  /* Testi (nero caldo) */
+  --text-primary:   #2a2a27;
+  --text-secondary: #5c594f;
+  --text-muted:     #8a8576;
+  --text-dim:       #b3ad9d;
+
+  /* Accenti — clay/terracotta Claude come azione primaria */
+  --amber:        #c96442;
+  --amber-bright: #c96442;
+  --amber-dim:    #e7d6ce;
+  --sage:         #5f8a52;
+  --sage-bright:  #4f7a44;
+  --sage-dim:     #cfe0c8;
+  --rust:         #b5503a;
+  --rust-bright:  #a8472f;
+  --rust-dim:     #e8cfc7;
+
+  /* Strutture */
+  --border-soft:   rgba(40, 40, 35, 0.06);
+  --border-medium: rgba(40, 40, 35, 0.12);
+  --border-strong: rgba(40, 40, 35, 0.22);
+  --shadow-card:   0 1px 3px rgba(40, 40, 35, 0.08);
+  --shadow-deep:   0 10px 34px rgba(40, 40, 35, 0.14);
+
+  /* Alias componenti recenti */
+  --bg:     #faf9f5;
+  --text:   #2a2a27;
+  --border: rgba(40, 40, 35, 0.12);
+
+  /* Accenti "neon" attenuati per fondo chiaro (mantengono leggibilità) */
+  --neon-cyan:   #2c7a8c;
+  --neon-violet: #7a5bb0;
+  --neon-lime:   #5f8a2e;
+  --neon-gold:   #b8860b;
+
+  /* Font: titoli serif alla Claude, corpo Inter */
+  --font-display: 'Source Serif 4', 'Tiempos', Georgia, 'Times New Roman', serif;
+}
+
+/* ── Ritocchi strutturali (dove serve forzare il chiaro) ── */
+body.theme-light { background: var(--bg-deepest); color: var(--text-primary); }
+
+/* Titoli di pagina/brand in serif scuro */
+body.theme-light .page-title,
+body.theme-light .brand-mark,
+body.theme-light .dash-title,
+body.theme-light .rki-title { color: var(--text-primary); }
+
+/* Sfondi decorativi dei page-header (immagini scure): attenuati per leggibilità */
+body.theme-light .page-header-bg::before,
+body.theme-light .page-header-bg::after { opacity: 0.05 !important; }
+
+/* Topbar / sidebar: bordo morbido chiaro */
+body.theme-light .topbar  { border-bottom: 1px solid var(--border-medium); }
+body.theme-light .sidebar { border-right: 1px solid var(--border-medium); }
+
+/* Nav item attivo: fondo crema + accento clay */
+body.theme-light .nav-item.active {
+  background: var(--bg-hover);
+  color: var(--amber-bright);
+}
+body.theme-light .nav-item:hover { background: var(--bg-hover); }
+
+/* Bottoni primari: clay Claude con testo chiaro */
+body.theme-light .btn-primary {
+  background: var(--amber-bright);
+  color: #fff;
+  border-color: var(--amber-bright);
+}
+body.theme-light .btn-primary:hover { background: var(--rust-bright); border-color: var(--rust-bright); }
+body.theme-light .btn,
+body.theme-light .btn-ghost {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+body.theme-light .btn-ghost:hover { background: var(--bg-hover); }
+
+/* Input/textarea/select su fondo bianco */
+body.theme-light input,
+body.theme-light textarea,
+body.theme-light select,
+body.theme-light .car-input,
+body.theme-light .scr-textarea,
+body.theme-light .am-mat-search,
+body.theme-light .am-mat-sort {
+  background: #fff;
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+/* Modale chiara */
+body.theme-light .modal { background: var(--bg-card); color: var(--text-primary); }
+body.theme-light .modal-backdrop { background: rgba(40, 40, 35, 0.35); }
+
+/* Glow neon troppo forti su chiaro: riduci le ombre colorate accese */
+body.theme-light .rk-rp-box,
+body.theme-light .scr-voto-box { box-shadow: var(--shadow-card); }
+
+/* Riquadri/sfondi "scuri" hardcoded ricorrenti → neutralizza su chiaro */
+body.theme-light .am-scope-box,
+body.theme-light .scr-map-col,
+body.theme-light .scr-blocco,
+body.theme-light .scr-qcard,
+body.theme-light .scr-rk,
+body.theme-light .rk-banca-card { background: var(--bg-card); }
+
+/* Testo della mascotte/bolle resta leggibile */
+body.theme-light .mw-bubble { color: var(--text-primary); background: #fff; }

@@ -1,0 +1,233 @@
+  /* ═══════════════════════════════════════════════════════
+     TAPPA 3.7 — MOBILE FRIENDLINESS
+     ═══════════════════════════════════════════════════════ */
+
+  /* Hamburger nascosto di default (visibile solo su mobile) */
+  .btn-hamburger {
+    display: none;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 8px;
+    margin-right: 4px;
+    border-radius: 6px;
+  }
+  .btn-hamburger:hover { background: var(--bg-elev); color: var(--amber); }
+  .btn-hamburger:active { background: var(--bg-elev); }
+
+  /* Backdrop sidebar mobile (nascosto di default) */
+  .sidebar-backdrop {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 89;
+    opacity: 0;
+    transition: opacity 0.22s;
+  }
+  .sidebar-backdrop.active {
+    display: block;
+    opacity: 1;
+  }
+
+  /* — TABLET (max 900px): leggera compattazione — */
+  @media (max-width: 900px) {
+    .main { padding: 18px 20px; }
+    .car-rank-banner { padding: 18px 20px; gap: 16px; }
+    .car-rank-banner .rank-name { font-size: 24px; }
+    .car-today-stats { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+    .car-stat-cell .v { font-size: 18px; }
+  }
+
+  /* — MOBILE (max 768px): hamburger + sidebar overlay + layout single-column — */
+  @media (max-width: 768px) {
+
+    /* App: rimuovo la colonna sidebar, main a tutta larghezza */
+    .app {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "topbar"
+        "main";
+    }
+
+    /* Topbar compatta */
+    .topbar { padding: 0 12px; gap: 8px; }
+    .btn-hamburger { display: flex; align-items: center; justify-content: center; }
+    .brand-mark { font-size: 18px; }
+    .brand-sub { display: none; }
+    .topbar-right { gap: 8px; }
+    .countdown { padding: 4px 8px; }
+    .countdown-label { display: none; }
+
+    /* Sidebar diventa overlay laterale */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: 260px;
+      height: 100vh;
+      transform: translateX(-100%);
+      transition: transform 0.25s ease-out;
+      z-index: 90;
+      box-shadow: 4px 0 18px rgba(0,0,0,0.4);
+      padding-top: 64px;
+      overflow-y: auto;
+    }
+    .sidebar.open { transform: translateX(0); }
+
+    /* Main: padding ridotto */
+    .main { padding: 14px 12px; }
+    .page-header { margin-bottom: 18px; }
+    .page-title { font-size: 24px; }
+
+    /* Empty state */
+    .empty-state { padding: 24px 18px; margin: 24px auto; }
+    .empty-state h2 { font-size: 22px; }
+
+    /* — CARRIERA mobile — */
+    .car-wizard { margin: 16px auto; padding: 0 4px; }
+    .car-wizard-header { padding-bottom: 12px; margin-bottom: 18px; }
+    .car-wizard-header h1 { font-size: 22px; }
+    .car-step { padding: 18px 16px; }
+    .car-step h3 { font-size: 19px; }
+    .car-form-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+    }
+    .car-form-row label { min-width: 0; }
+    .car-input { width: 100%; box-sizing: border-box; }
+    .car-cards {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .car-card { padding: 14px; }
+    .car-actions { flex-direction: column-reverse; gap: 8px; }
+    .car-actions .btn { width: 100%; }
+
+    /* Home Carriera */
+    .car-rank-banner {
+      flex-direction: column;
+      align-items: stretch;
+      padding: 16px 18px;
+      gap: 14px;
+    }
+    .car-rank-banner .rank-right { max-width: 100%; }
+    .car-rank-banner .rank-name { font-size: 22px; }
+    .car-rank-banner .rank-left { text-align: left; }
+    .car-missions { grid-template-columns: 1fr; gap: 12px; }
+    .car-mission { padding: 16px; }
+    .car-today-stats {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .car-stat-cell { padding: 12px 10px; }
+    .car-stat-cell .v { font-size: 19px; }
+    .car-stat-cell .l { font-size: 10px; }
+    .car-warning, .car-resume, .car-anticipa {
+      flex-direction: column;
+      align-items: stretch;
+      padding: 14px;
+    }
+    .car-warning .w-actions, .car-resume .r-actions { flex-direction: column; }
+    .car-warning .w-actions .btn, .car-resume .r-actions .btn { width: 100%; }
+    .car-anticipa .btn { width: 100%; }
+    .car-footer { flex-direction: column; gap: 6px; }
+
+    /* — QUIZ SESSION mobile — */
+    .quiz-session { padding: 0 4px; }
+    .quiz-topbar {
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px 12px;
+    }
+    .quiz-progress-display .current { font-size: 22px; }
+    .quiz-progress-display .total { font-size: 13px; }
+    .quiz-progress-bar { order: 5; width: 100%; flex-basis: 100%; }
+    .quiz-stats-inline { font-size: 12px; gap: 10px; }
+    .quiz-timer { font-size: 13px; padding: 4px 8px; }
+
+    .quiz-card { padding: 18px 14px; }
+    .quiz-materia-tag { font-size: 10px; padding: 3px 6px; }
+    .quiz-question { font-size: 17px; line-height: 1.45; margin: 12px 0 16px; }
+    .quiz-option {
+      padding: 14px 12px;
+      font-size: 14px;
+      min-height: 48px;
+    }
+    .quiz-option-letter { width: 28px; height: 28px; font-size: 13px; }
+
+    .quiz-controls {
+      flex-direction: column-reverse;
+      gap: 10px;
+      margin-top: 18px;
+    }
+    .quiz-controls-left, .quiz-controls-right {
+      width: 100%;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .quiz-controls .btn { width: 100%; }
+
+    /* — RISULTATI mobile — */
+    .result-stats {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .result-stat { padding: 14px 12px; }
+    .result-stat-value { font-size: 22px; }
+    .result-stat-label { font-size: 10px; }
+    .car-xp-summary { padding: 14px 16px; }
+
+    /* — MAPPA MATERIE mobile — */
+    .map-node { padding: 8px 10px; }
+    .map-stats { flex-wrap: wrap; gap: 8px; font-size: 12px; }
+
+    /* — MODALI mobile — */
+    .modal {
+      max-width: calc(100vw - 28px);
+      width: calc(100vw - 28px);
+      padding: 20px 18px;
+      max-height: calc(100vh - 60px);
+      overflow-y: auto;
+    }
+    .modal-title { font-size: 18px; }
+    .modal-text { font-size: 14px; }
+    .modal-actions { flex-direction: column-reverse; gap: 8px; }
+    .modal-actions .btn { width: 100%; }
+    .car-timer-picker .preset-row { gap: 8px; }
+    .car-timer-picker .preset-chip { padding: 10px 12px; font-size: 13px; min-width: 60px; flex: 1; }
+
+    /* — TIMER PAUSA: spostato in basso al centro su mobile — */
+    .car-pausa-timer {
+      top: auto;
+      bottom: 16px;
+      right: 50%;
+      transform: translateX(50%);
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+
+    /* — TOAST mobile — */
+    .toast {
+      bottom: 70px !important;
+      left: 12px;
+      right: 12px;
+      max-width: calc(100vw - 24px);
+    }
+
+    /* Stat cards pacchetto */
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .config-grid { grid-template-columns: 1fr; }
+  }
+
+  /* — MOBILE SMALL (max 380px): ulteriori riduzioni — */
+  @media (max-width: 380px) {
+    .brand-mark { font-size: 16px; }
+    .quiz-question { font-size: 16px; }
+    .quiz-option { font-size: 13px; padding: 12px 10px; }
+    .car-stat-cell .v { font-size: 17px; }
+    .car-today-stats { grid-template-columns: repeat(2, 1fr); }
+    .result-stats { grid-template-columns: repeat(2, 1fr); }
+  }

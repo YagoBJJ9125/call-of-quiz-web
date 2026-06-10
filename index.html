@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Call Of Quiz</title>
+
+  <!-- PWA: installabile su smartphone ("Aggiungi a schermata Home") -->
+  <meta name="theme-color" content="#161210">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- Google Fonts: EB Garamond + Inter + JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Orbitron:wght@500;700;900&family=Bangers&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+
+  <!-- CSS — caricamento in ordine di dipendenza -->
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/quiz.css">
+  <link rel="stylesheet" href="css/ranked.css">
+  <link rel="stylesheet" href="css/scritto.css">
+  <link rel="stylesheet" href="css/simulazione.css">
+  <link rel="stylesheet" href="css/studio.css">
+  <link rel="stylesheet" href="css/mobile.css">
+  <!-- Tema estetico anime/gamer (per ultimo: accenti decorativi globali) -->
+  <link rel="stylesheet" href="css/anime-theme.css">
+  <!-- Tema chiaro (override variabili, attivo con body.theme-light) -->
+  <link rel="stylesheet" href="css/theme-light.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <button class="btn-hamburger" id="btnHamburger" aria-label="Menu" title="Menu">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <div class="brand">
+      <span class="brand-mark">Call Of Quiz</span>
+      <span class="brand-sub" id="appVersion">…</span>
+    </div>
+    <div class="topbar-right">
+      <div class="countdown" id="countdown" style="display:none">
+        <span class="countdown-label">Concorso tra</span>
+        <span class="countdown-value" id="countdownValue">—</span>
+      </div>
+      <button class="btn btn-ghost" id="btnSettings" title="Impostazioni">⚙</button>
+    </div>
+  </header>
+
+  <!-- Backdrop sidebar mobile -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <div class="nav-section">
+      <div class="nav-section-title">Dashboard</div>
+      <div class="nav-item active" data-page="dashboard">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M3 13l9-9 9 9M5 12v8h6v-6h2v6h6v-8"/></svg>
+        Dashboard
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Modalità</div>
+      <div class="nav-item" data-page="ranked">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M6 9l1.5-5h9L18 9M6 9h12M6 9l-2 5h16l-2-5M12 14v6M9 22h6"/></svg>
+        Modalità Ranked Quiz
+      </div>
+      <div class="nav-item" data-page="libera">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
+        Allenamento Libero
+      </div>
+      <div class="nav-item" data-page="simulazione">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M21 8v6"/><path d="M7 11v4c0 1 2 2 5 2s5-1 5-2v-4"/></svg>
+        Simulazione d'esame
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Studio e Analisi</div>
+      <div class="nav-item" data-page="studio">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        Studio Fonti
+      </div>
+      <div class="nav-item" data-page="mappa">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg>
+        Analisi Globale
+      </div>
+      <div class="nav-item" data-page="progressi-ranked">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg>
+        Progressi Ranked
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Prova Scritta</div>
+      <div class="nav-item" data-page="scritto">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+        Studia &amp; Esercitati
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Impostazioni e altro</div>
+      <div class="nav-item" data-page="moduli">
+        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Gestisci Moduli
+      </div>
+      <div class="nav-item" data-page="piani">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        Piani &amp; Partite
+      </div>
+      <div class="nav-item" id="navBtnSettings">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Impostazioni
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main" id="main">
+    <!-- Contenuto dinamico -->
+  </main>
+
+</div>
+
+<!-- Unico file input multiplo per tutti i JSON del pacchetto -->
+<input type="file" id="filePacchetto" class="file-hidden" accept=".json" multiple>
+
+<!-- Modal -->
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <button class="modal-close" type="button" aria-label="Chiudi" onclick="closeModal()">✕</button>
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-text" id="modalText"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Annulla</button>
+      <button class="btn btn-primary" id="modalConfirm">Conferma</button>
+    </div>
+  </div>
+</div>
+
+<!-- Banner transizione di rank — modalità Ranked (popup centrato) -->
+<div class="rk-banner-overlay" id="rkBannerOverlay">
+  <div class="rk-banner" id="rkBanner">
+    <div class="rk-banner-emblema" id="rkBannerEmblema">🏆</div>
+    <div class="rk-banner-tipo" id="rkBannerTipo">—</div>
+    <div class="rk-banner-rank" id="rkBannerRank">—</div>
+    <div class="rk-banner-sub" id="rkBannerSub">—</div>
+    <button class="rk-banner-btn" id="rkBannerBtn">Continua</button>
+  </div>
+</div>
+
+
+<!-- JS — caricamento in ordine di dipendenza (tutti globali, nessun modulo ES6) -->
+<script src="js/storage.js"></script>
+<!-- Persistenza durevole (Fase 2): NO-OP su web, SQLite su Tauri. Dopo storage.js. -->
+<script src="js/cm-persist.js"></script>
+<!-- Save manager (multi-save): monkey-patcha storage.js, deve venire SUBITO dopo -->
+<script src="js/saves-core.js"></script>
+<!-- Backup completo (localStorage cm:* + IndexedDB): usato da Impostazioni -->
+<script src="js/backup-core.js"></script>
+<!-- Backup automatici rotanti su disco (solo Tauri): dopo backup-core/cm-persist -->
+<script src="js/autobackup.js"></script>
+<!-- Auto-update da GitHub Releases (solo Tauri) -->
+<script src="js/updater.js"></script>
+<script src="js/pacchetto.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/allenamento.js"></script>
+<script src="js/quiz-engine.js"></script>
+<!-- Helpers storage condivisi con Ranked (padroneggiamento, diario, pesi materie) -->
+<script src="js/carriera-core.js"></script>
+<script src="js/analisi-materie.js"></script>
+<script src="js/ranked-core.js"></script>
+<script src="js/ranked-engine.js"></script>
+<script src="js/ranked-home.js"></script>
+<script src="js/ranked-stats.js"></script>
+<!-- Prova scritta: piano studio + banca quesiti + client AI Gemini + UI -->
+<script src="js/quesiti-piano.js"></script>
+<script src="js/quesiti-data.js"></script>
+<script src="js/gemini-client.js"></script>
+<script src="js/scritto.js"></script>
+<!-- Sezione Studio: fonti normative + tutor IA (dati lazy da js/fonti/) -->
+<script src="js/studio.js"></script>
+<!-- Simulazione d'esame (preselettiva quiz + scritto quesiti): dopo quiz-engine, ranked-engine, scritto, gemini -->
+<script src="js/simulazione.js"></script>
+<!-- Bundle dati incluso (manifest + programma + banche). Generato da
+     scripts/genera-bundle.js — se assente, l'app usa l'import manuale. -->
+<script src="js/data-bundle.js"></script>
+<!-- Account e sincronizzazione cloud (Supabase): dopo backup-core, prima di app.js -->
+<script src="js/sync-core.js"></script>
+<!-- Service worker PWA: solo su https (mai su Tauri o file://) -->
+<script>
+  if ('serviceWorker' in navigator && location.protocol === 'https:' && !window.__TAURI__) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+</script>
+<!-- UI multi-save (topbar chip + pagina Piani & Partite + wizard creazione) -->
+<script src="js/saves-ui.js"></script>
+<!-- Propagazione live RP cross-save (Fase 3) -->
+<script src="js/saves-propagation.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
