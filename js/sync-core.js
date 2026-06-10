@@ -29,8 +29,8 @@
     'use strict';
 
     // ── CONFIG (da GUIDA-SUPABASE.md) ──
-    const SUPABASE_URL = '';        // es. 'https://abcdefgh.supabase.co'
-    const SUPABASE_ANON_KEY = '';   // chiave "anon public" del progetto
+    const SUPABASE_URL = 'https://axiiyeqnfmthnyiaaeey.supabase.co';        // es. 'https://abcdefgh.supabase.co'
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF4aWl5ZXFuZm10aG55aWFhZWV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMDc1NjEsImV4cCI6MjA5NjY4MzU2MX0.RGAyT6_tDv77HapGb6k8CxOXFeHHXsP75fgLfDILi1Q';   // chiave "anon public" del progetto
 
     const SK_SESSIONE = 'cm:sync:sessione';   // {access_token, refresh_token, scadeA, user:{id,email,nick}}
     const SK_ULTIMO   = 'cm:sync:ultimo';     // {at: iso, verso: 'push'|'pull'}
@@ -138,7 +138,9 @@
         const t = await res.text().catch(() => '');
         throw new Error('Sync: errore ' + res.status + (t ? ' — ' + t.slice(0, 120) : ''));
       }
-      return res.status === 204 ? null : res.json();
+      // 201/204 con Prefer return=minimal hanno corpo vuoto: niente json()
+      const testo = await res.text();
+      return testo ? JSON.parse(testo) : null;
     }
 
     function _pulisciPayload(backup) {
