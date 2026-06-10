@@ -760,9 +760,9 @@
           // Primo accesso su questo dispositivo: se il cloud ha già dati
           // chiedo cosa fare, altrimenti invio quelli locali.
           _syncMsg('Connesso. Controllo i dati sul cloud…');
-          try { await SyncCore.pull({ silenzioso: true }); location.reload(); return; }
-          catch (_) { /* nessun dato remoto o errore di lettura → push */ }
-          await SyncCore.push();
+          let scaricato = false;
+          try { scaricato = (await SyncCore.pull({ silenzioso: true })).fatto; } catch (_) {}
+          if (!scaricato) await SyncCore.push();   // cloud vuoto → invia i dati locali
           location.reload();
         } catch (e) { _syncMsg(e.message, true); }
       };
