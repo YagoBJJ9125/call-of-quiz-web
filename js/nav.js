@@ -604,9 +604,12 @@
             <button class="btn btn-primary" id="set-sync-push">⬆ Invia al cloud</button>
             <button class="btn" id="set-sync-pull">⬇ Scarica dal cloud</button>
             <button class="btn btn-ghost" id="set-sync-esci">Esci dall'account</button>
+            <button class="btn btn-danger" id="set-sync-elimina">🗑 Elimina account</button>
           </div>
           <p class="settings-desc" style="font-size:.85em;opacity:.75;margin-top:8px">
-            ⚠ "Scarica dal cloud" <strong>sostituisce</strong> i dati di questo dispositivo con quelli sincronizzati.</p>
+            ⚠ "Scarica dal cloud" <strong>sostituisce</strong> i dati di questo dispositivo con quelli sincronizzati.
+            "Esci" scollega solo questo dispositivo (i dati locali e quelli sul cloud restano).
+            "Elimina account" cancella account e dati dal cloud: l'email torna libera, i dati locali restano.</p>
         ` : `
           <p class="settings-desc">Accedi (o crea un account) per ritrovare i tuoi progressi su tutti i dispositivi: PC e smartphone sempre allineati.</p>
           <div class="settings-row"><input type="text" class="car-input" id="set-sync-nick" placeholder="Nick (solo per la registrazione)"></div>
@@ -615,6 +618,7 @@
           <div class="settings-actions">
             <button class="btn btn-primary" id="set-sync-login">Accedi</button>
             <button class="btn" id="set-sync-signup">Crea account</button>
+            <button class="btn btn-ghost" id="set-sync-recupero" title="Riceverai una email con il link per impostare una nuova password">Password dimenticata?</button>
           </div>
           <div class="settings-info" id="set-sync-msg" style="display:none"></div>
         `}
@@ -802,6 +806,25 @@
         SyncCore.esci();
         toast('Disconnesso. I dati locali restano su questo dispositivo.');
         closeModalSettings();
+      };
+      const btnRecupero = document.getElementById('set-sync-recupero');
+      if (btnRecupero) btnRecupero.onclick = async () => {
+        const email = document.getElementById('set-sync-email').value;
+        try {
+          await SyncCore.recuperaPassword(email);
+          _syncMsg('Email inviata a ' + email + ': apri il link per impostare la nuova password.');
+        } catch (e) { _syncMsg(e.message, true); }
+      };
+      const btnElimina = document.getElementById('set-sync-elimina');
+      if (btnElimina) btnElimina.onclick = () => {
+        closeModalSettings();
+        showModal('🗑 Elimina account',
+          'L\'account e i dati sincronizzati sul cloud verranno CANCELLATI definitivamente. ' +
+          'L\'email tornerà libera per un nuovo account. I dati su questo dispositivo NON vengono toccati. Continuare?',
+          async () => {
+            try { await SyncCore.eliminaAccount(); toast('Account eliminato. I dati locali sono ancora qui.'); }
+            catch (e) { toast(e.message, true); }
+          }, 'Sì, elimina');
       };
 
       document.getElementById('set-data-save').onclick = () => {

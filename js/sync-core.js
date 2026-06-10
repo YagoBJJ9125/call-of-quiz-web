@@ -107,10 +107,75 @@
     }
 
     function esci() {
+      clearTimeout(_timerDebounce);   // niente push fantasma dopo logout/eliminazione
       _togli(SK_SESSIONE);
       _togli(SK_ULTIMO);
       _togli(SK_SPORCO);
     }
+
+    // Elimina l'account dal cloud (utente + snapshot, via RPC delete_user
+    // SECURITY DEFINER: ognuno può cancellare solo sé stesso). I dati locali
+    // del dispositivo restano intatti.
+    async function eliminaAccount() {
+      const tok = await _token();
+      const res = await fetch(SUPABASE_URL + '/rest/v1/rpc/delete_user', {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + tok,
+          'Content-Type': 'application/json',
+        },
+        body: '{}',
+      });
+      if (!res.ok) {
+        const t = await res.text().catch(() => '');
+        throw new Error('Eliminazione non riuscita: errore ' + res.status + (t ? ' — ' + t.slice(0, 100) : ''));
+      }
+      esci();
+    }
+
+    // Invia l'email di recupero password (link verso la web app).
+    async function recuperaPassword(email) {
+      if (!configurato()) throw new Error('Sincronizzazione non configurata.');
+      if (!email || !email.trim()) throw new Error('Inserisci la tua email nel campo qui sopra.');
+      const redirect = 'https://yagobjj9125.github.io/call-of-quiz-web/';
+      await _authFetch('/recover?redirect_to=' + encodeURIComponent(redirect), { email: email.trim() });
+      return true;
+    }
+
+    // Completa il recupero: il link nell'email apre la web app con i token
+    // nel fragment (#access_token=…&type=recovery). Qui li intercettiamo,
+    // chiediamo la nuova password e la impostiamo.
+    function _gestisciRecovery() {
+      if (!configurato() || !location.hash || location.hash.indexOf('type=recovery') === -1) return;
+      const p = new URLSearchParams(location.hash.slice(1));
+      const access = p.get('access_token'), refresh = p.get('refresh_token');
+      history.replaceState(null, '', location.pathname + location.search);
+      if (!access) return;
+      const chiedi = () => {
+        const pw = window.prompt('Recupero password Call Of Quiz\n\nInserisci la NUOVA password (minimo 6 caratteri):');
+        if (pw == null) return;                       // annullato
+        if (pw.length < 6) { alert('Password troppo corta (minimo 6 caratteri).'); chiedi(); return; }
+        fetch(SUPABASE_URL + '/auth/v1/user', {
+          method: 'PUT',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + access,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ password: pw }),
+        }).then(async res => {
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(_msgItaliano(data.msg || data.message || ('errore ' + res.status)));
+          // Sessione valida ricevuta dal link: l'utente è già "dentro".
+          _salvaSessione({ access_token: access, refresh_token: refresh, expires_in: 3600, user: data });
+          alert('Password aggiornata ✓ Sei connesso: i tuoi progressi si sincronizzeranno da soli.');
+          location.reload();
+        }).catch(e => { alert('Recupero non riuscito: ' + e.message); });
+      };
+      chiedi();
+    }
+    _gestisciRecovery();
 
     // Token valido, rinfrescato se serve.
     async function _token() {
@@ -259,6 +324,7 @@
     window.SyncCore = {
       configurato, loggato, utente, sessione,
       registra, accedi, esci, push, pull,
+      eliminaAccount, recuperaPassword,
       ultimoSync: () => _leggi(SK_ULTIMO),
       haModifichePendenti: () => localStorage.getItem(SK_SPORCO) === '1',
     };
