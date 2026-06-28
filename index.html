@@ -201,8 +201,26 @@
 <!-- Service worker PWA: solo su https (mai su Tauri o file://) -->
 <script>
   if ('serviceWorker' in navigator && location.protocol === 'https:' && !window.__TAURI__) {
+    // Auto-update: quando un sw NUOVO prende il controllo (skipWaiting +
+    // clients.claim in sw.js), ricarica una volta sola così l'utente passa
+    // subito al codice aggiornato senza reload manuali. Guardia anti-loop.
+    // Solo se c'era già un controller: alla primissima visita non ricarica.
+    if (navigator.serviceWorker.controller) {
+      let _ricaricato = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (_ricaricato) return;
+        _ricaricato = true;
+        location.reload();
+      });
+    }
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
+      navigator.serviceWorker.register('sw.js').then((reg) => {
+        // Controlla aggiornamenti subito e a ogni ritorno in primo piano.
+        reg.update().catch(() => {});
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') reg.update().catch(() => {});
+        });
+      }).catch(() => {});
     });
   }
 </script>
