@@ -288,6 +288,33 @@
       console.info('[saves-core] piano default popolato con %d materie', tutteMaterie.length);
     }
 
+    // ── Migrazione: aggiunge ai piani ESISTENTI le materie introdotte dopo
+    // che il piano dell'utente era già stato popolato. I save "tutto incluso"
+    // (piano vuoto = nessun filtro) e i save nuovi vedono già tutto; qui si
+    // toccano solo i piani non vuoti. Ogni materia è aggiunta UNA volta sola
+    // per save (flag _materieMigrate): se l'utente la rimuove poi, non torna.
+    // AGGIORNARE questa lista quando si aggiungono materie in un update.
+    const MATERIE_AGGIUNTE = ['M16_informatica_ict'];
+    function migraNuoveMaterie() {
+      if (!MATERIE_AGGIUNTE.length) return;
+      const lista = getListaSaves();
+      let cambiato = false;
+      for (const s of lista) {
+        if (!s.piano || !Array.isArray(s.piano.materieIds) || s.piano.materieIds.length === 0) continue;
+        if (!Array.isArray(s._materieMigrate)) s._materieMigrate = [];
+        for (const id of MATERIE_AGGIUNTE) {
+          if (s._materieMigrate.includes(id)) continue;       // già migrata su questo save
+          if (!s.piano.materieIds.includes(id)) {
+            s.piano.materieIds.push(id);
+            console.info('[saves-core] migrata materia %s nel piano del save %s', id, s.id);
+          }
+          s._materieMigrate.push(id);
+          cambiato = true;
+        }
+      }
+      if (cambiato) _salvaListaSaves(lista);
+    }
+
     // ─── Accessor diretti per save SPECIFICI (bypass monkey-patch) ────────
     // Servono alla propagazione live cross-save: per scrivere RP nello stato
     // di un save diverso da quello attivo, le chiamate normali NON vanno bene
@@ -430,6 +457,7 @@
     window.SavesCore = {
       init: initSaves,
       popolaPianoDefaultSeVuoto,
+      migraNuoveMaterie,
       getListaSaves,
       getSaveAttivo,
       getSaveAttivoId,

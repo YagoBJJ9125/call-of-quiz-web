@@ -57,6 +57,10 @@
       if (window.SavesCore && caricato) {
         try { window.SavesCore.popolaPianoDefaultSeVuoto(); }
         catch (e) { console.warn('popolaPianoDefaultSeVuoto:', e); }
+        // Aggiunge ai piani già popolati le materie introdotte con gli update
+        // (es. M16 Informatica e ICT), così compaiono anche per chi ha già un save.
+        try { window.SavesCore.migraNuoveMaterie(); }
+        catch (e) { console.warn('migraNuoveMaterie:', e); }
       }
       aggiornaCountdown();
       if (caricato) {
