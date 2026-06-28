@@ -596,3 +596,30 @@
     avviaTimer();
     renderQuizCorrente();
   }
+
+  // ═══════ Navigazione da tastiera (← / →) ═══════
+  // Frecce sinistra/destra: quiz precedente/successivo. Rispecchia ESATTAMENTE
+  // i pulsanti freccia liberi (data-quiz-nav) renderizzati nella card: stessi
+  // limiti (no wrap), nessun vincolo di risposta. Registrato una sola volta.
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    // Niente scorciatoie del browser (es. Alt+← = indietro): lascia stare.
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+    // Solo quando una batteria è effettivamente a schermo.
+    if (!SESSIONE || !SESSIONE.quiz || !document.querySelector('.quiz-session')) return;
+    // Non rubare le frecce a chi sta scrivendo (tutor IA, ricerca, ecc.).
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+    // Non navigare sotto a un modale aperto o all'overlay "Studia la teoria".
+    const modal = document.getElementById('modal');
+    if (modal && modal.classList.contains('active')) return;
+    if (document.getElementById('studioOverlay')) return;
+
+    if (e.key === 'ArrowLeft' && SESSIONE.iCorrente > 0) {
+      e.preventDefault();
+      vaiAQuiz(SESSIONE.iCorrente - 1);
+    } else if (e.key === 'ArrowRight' && SESSIONE.iCorrente < SESSIONE.quiz.length - 1) {
+      e.preventDefault();
+      vaiAQuiz(SESSIONE.iCorrente + 1);
+    }
+  });

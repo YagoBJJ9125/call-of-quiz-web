@@ -8,6 +8,9 @@
 # La chiave usata è la "anon public" — la stessa già presente nel client
 # (js/sync-core.js): è pubblica by-design, la sicurezza sta nelle RLS policy.
 # Se un giorno il progetto Supabase cambia, aggiornare SUPABASE_URL qui sotto.
+#
+# NB: questo file è la SORGENTE. Vive nel webroot così il deploy-web (robocopy
+# /MIR verso il repo call-of-quiz-web) lo propaga e non lo cancella.
 
 name: keep-alive-supabase
 
