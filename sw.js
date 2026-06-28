@@ -10,7 +10,7 @@
 // Le chiamate IA (Groq/Gemini) e i font Google sono cross-origin e
 // passano dritte alla rete.
 // ═══════════════════════════════════════════════════════
-const CACHE = 'coq-v3';
+const CACHE = 'coq-v4';
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();

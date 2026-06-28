@@ -194,27 +194,29 @@
 
   // — Selezione "Recupero": quiz da ripadroneggiare ─────────────────────
   // Usa l'helper unico. Opzionalmente restringe a UNA materia.
-  // Applica un cooldown: gli errori commessi nelle ultime RANKED_RECUPERO_COOLDOWN_MIN
-  // non compaiono subito nel pool recupero → evita che l'errore commesso
-  // 1 minuto fa riappaia già nella prossima batteria da 25.
+  // Il recupero ESPLICITO (l'utente clicca "Recupera N errori") include TUTTI
+  // gli errori recuperabili: il numero deve coincidere con quello mostrato sul
+  // bottone (rankedContaErroriAperti). NON si applica più un cooldown che
+  // escludeva gli errori recenti — prima causava il bug "9 errori contati ma
+  // solo 1 nella batteria" se gli errori erano stati commessi da poco.
+  // Il cooldown resta solo come PRIORITÀ: gli errori "maturi" (più vecchi di
+  // RANKED_RECUPERO_COOLDOWN_MIN) vanno davanti, i recenti dopo — così se
+  // n < totale si parte dai più stagionati, ma nessuno viene escluso.
   function rankedSelezionaRecupero(n, opts) {
     opts = opts || {};
     const materiaTarget = opts.materiaId || null;
     const dati = _rankedErroriRecuperabili();
     let candidati = dati.pool;
     if (materiaTarget) candidati = candidati.filter(p => p.materiaId === materiaTarget);
+    if (candidati.length === 0) return [];
 
-    // Cooldown: escludi gli errori recenti (< RANKED_RECUPERO_COOLDOWN_MIN)
     const cooldownMs = RANKED_RECUPERO_COOLDOWN_MIN * 60 * 1000;
     const ora = Date.now();
-    const freschi = candidati.filter(p => (ora - (dati.ultimaTsErrato[p.id] || 0)) < cooldownMs);
     const maturi  = candidati.filter(p => (ora - (dati.ultimaTsErrato[p.id] || 0)) >= cooldownMs);
-
-    // Se non ci sono errori maturi, usa tutti (fallback per non restituire lista vuota)
-    candidati = maturi.length > 0 ? maturi : candidati;
-    if (candidati.length === 0) return [];
-    shuffle(candidati);
-    return candidati.slice(0, Math.min(n, candidati.length));
+    const freschi = candidati.filter(p => (ora - (dati.ultimaTsErrato[p.id] || 0)) <  cooldownMs);
+    shuffle(maturi); shuffle(freschi);
+    const ordinati = maturi.concat(freschi);   // maturi prima, poi recenti — nessuno escluso
+    return ordinati.slice(0, Math.min(n, ordinati.length));
   }
 
   // — Conta errori "maturi" per cooldown (usato dalla UI per mostrare contatore corretto) —
