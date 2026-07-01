@@ -5,6 +5,7 @@
   async function caricaPacchettoSalvato() {
     const manifest  = caricaDaStorage(SK_MANIFEST);
     const programma = caricaDaStorage(SK_PROGRAMMA);
+    const bandi     = caricaDaStorage(SK_BANDI) || [];
 
     if (!manifest || !programma) return false;
 
@@ -20,7 +21,7 @@
       }
     }
 
-    STATE.pacchetto = { manifest, programma, banche };
+    STATE.pacchetto = { manifest, programma, banche, bandi };
     return true;
   }
 
@@ -37,6 +38,7 @@
       manifest:  bundle.manifest,
       programma: bundle.programma,
       banche,
+      bandi: bundle.bandi || [],
     };
     STATE._analisiCatalogo = null;   // invalida la cache dell'Analisi
     return true;
@@ -62,6 +64,7 @@
 
     let manifest = null;
     let programma = null;
+    let bandi = null;
     const banche = [];
     const errori = [];
 
@@ -74,6 +77,8 @@
           manifest = data;
         } else if (data && Array.isArray(data.materie)) {
           programma = data;
+        } else if (data && Array.isArray(data.bandi)) {
+          bandi = data.bandi;
         } else if (Array.isArray(data) && data.length > 0 && data[0].domanda) {
           let materia_id = null;
           if (data[0].categorizzazione && data[0].categorizzazione.materia_id) {
@@ -109,6 +114,7 @@
 
     salvaInStorage(SK_MANIFEST,  manifest);
     salvaInStorage(SK_PROGRAMMA, programma);
+    if (bandi) salvaInStorage(SK_BANDI, bandi);   // opzionale, non blocca l'import se assente
 
     try {
       for (const key of Object.keys(localStorage)) {

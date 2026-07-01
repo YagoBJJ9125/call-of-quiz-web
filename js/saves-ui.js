@@ -467,6 +467,12 @@
       const sel = new Set();                       // materia_id selezionate
       const argEsclusi = {};                       // materia_id → Set<arg_id> esclusi
       const espansi = new Set();                   // materia_id con dropdown aperto
+      let pesiOverride = {};                        // materia_id → peso 0-10 (da preset bando)
+      let bandoIdSelezionato = null;                // id del bando applicato (badge + salvataggio)
+      let nomeScelto = '';                          // nome suggerito da precompilare in wizNome
+
+      // Catalogo bandi disponibile (opzionale — bundle senza bandi_catalogo.json → [])
+      const catalogoBandi = (STATE.pacchetto.bandi || []);
 
       // Precompila in base alla modalità
       let saveEsistente = null;
@@ -485,9 +491,40 @@
         Object.keys(escl).forEach(mid => {
           if (Array.isArray(escl[mid])) argEsclusi[mid] = new Set(escl[mid]);
         });
+        pesiOverride = Object.assign({}, (saveEsistente.piano && saveEsistente.piano.pesiOverride) || {});
+        bandoIdSelezionato = saveEsistente.bandoId || null;
       } else {
         // Crea da zero: pre-seleziona tutte le materie
         for (const m of moduli) sel.add(m.materia_id);
+      }
+
+      // Schermata scelta bando: solo in creazione, solo se esiste un catalogo bandi.
+      // Finché non si sceglie (preset o "parti da zero") la griglia materie resta nascosta.
+      let mostraSchermataBando = !editing && catalogoBandi.length > 0;
+
+      function _applicaBando(bando) {
+        sel.clear(); espansi.clear();
+        (bando.piano && bando.piano.materieIds || []).forEach(id => sel.add(id));
+        Object.keys(argEsclusi).forEach(k => delete argEsclusi[k]);
+        const escl = (bando.piano && bando.piano.argomentiEsclusi) || {};
+        Object.keys(escl).forEach(mid => {
+          if (Array.isArray(escl[mid])) argEsclusi[mid] = new Set(escl[mid]);
+        });
+        pesiOverride = Object.assign({}, (bando.piano && bando.piano.pesiOverride) || {});
+        bandoIdSelezionato = bando.id;
+        nomeScelto = bando.nome || '';
+        mostraSchermataBando = false;
+        render();
+      }
+      function _partiDaZero() {
+        sel.clear(); espansi.clear();
+        for (const m of moduli) sel.add(m.materia_id);
+        Object.keys(argEsclusi).forEach(k => delete argEsclusi[k]);
+        pesiOverride = {};
+        bandoIdSelezionato = null;
+        nomeScelto = '';
+        mostraSchermataBando = false;
+        render();
       }
 
       const main = document.getElementById('main');
@@ -591,7 +628,50 @@
         `;
       }
 
+      // ── Schermata 0 (solo creazione): scelta del bando come preset ──
+      function _renderSchermataBando() {
+        main.innerHTML = `
+          <div class="page-header">
+            <h1 class="page-title">＋ Nuovo save</h1>
+            <p class="page-subtitle">Scegli un bando: materie, argomenti e pesi vengono precompilati dal preset, ma resti libero di modificare tutto nella schermata successiva.</p>
+          </div>
+          <div class="wiz-bando-grid">
+            ${catalogoBandi.map(b => {
+              const n = (b.piano && b.piano.materieIds || []).length;
+              return `
+                <button class="wiz-bando-card" data-bando="${_esc(b.id)}">
+                  <div class="wiz-bando-nome">${_esc(b.nome)}</div>
+                  ${b.ente ? `<div class="wiz-bando-ente">${_esc(b.ente)}</div>` : ''}
+                  ${b.descrizione ? `<div class="wiz-bando-descr">${_esc(b.descrizione)}</div>` : ''}
+                  <div class="wiz-bando-meta">${n} materie${b.scadenza ? ' · scadenza ' + _esc(b.scadenza) : ''}</div>
+                </button>
+              `;
+            }).join('')}
+            <button class="wiz-bando-card wiz-bando-zero" id="wizBandoZero">
+              <div class="wiz-bando-nome">🎯 Parti da zero</div>
+              <div class="wiz-bando-descr">Nessun preset: scegli tu materie e argomenti dalla libreria completa.</div>
+            </button>
+          </div>
+          <div class="wiz-actions">
+            <button class="btn btn-ghost" id="wizAnnulla">Annulla</button>
+          </div>
+        `;
+        main.querySelectorAll('.wiz-bando-card[data-bando]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const b = catalogoBandi.find(x => x.id === btn.dataset.bando);
+            if (b) _applicaBando(b);
+          });
+        });
+        document.getElementById('wizBandoZero').addEventListener('click', _partiDaZero);
+        document.getElementById('wizAnnulla').addEventListener('click', () => {
+          STATE.pageCorrente = oldPage || 'piani';
+          navigaA(STATE.pageCorrente);
+        });
+      }
+
       function render() {
+        if (mostraSchermataBando) { _renderSchermataBando(); return; }
+
         const calc = _calcolaRankSuggerito([...sel]);   // basato solo su materie
         const righe = moduli.map(_renderRigaMateria).join('');
 
@@ -600,16 +680,31 @@
           ? 'Modifica le materie e gli argomenti del piano. Diario, RP ranked e missioni non vengono toccati — cambia solo COSA viene proposto da qui in avanti.'
           : 'Dai un nome alla tua nuova partita e scegli le materie su cui giocare. Tutto il resto (RP ranked, missioni, badge) parte vergine — il padroneggiamento globale invece resta e ti farà partire avanti dove già sai.';
 
+        const bandoAttivo = bandoIdSelezionato ? catalogoBandi.find(b => b.id === bandoIdSelezionato) : null;
+        const bandoRiapplicabile = editing && saveEsistente.bandoId
+          ? catalogoBandi.find(b => b.id === saveEsistente.bandoId) : null;
+
         main.innerHTML = `
           <div class="page-header">
             <h1 class="page-title">${titolo}</h1>
             <p class="page-subtitle">${subtitolo}</p>
+            ${!editing && catalogoBandi.length > 0 ? `
+              <div class="wiz-bando-badge">
+                ${bandoAttivo ? `Preset: <strong>${_esc(bandoAttivo.nome)}</strong>` : 'Nessun preset (selezione libera)'}
+                <button class="btn-link" id="wizCambiaBando">← cambia bando</button>
+              </div>
+            ` : ''}
+            ${bandoRiapplicabile ? `
+              <div class="wiz-bando-badge">
+                <button class="btn-link" id="wizRiapplicaBando">🔄 Ri-applica preset "${_esc(bandoRiapplicabile.nome)}"</button>
+              </div>
+            ` : ''}
           </div>
 
           ${editing ? '' : `
             <div class="wiz-section">
               <label class="wiz-label">Nome del save</label>
-              <input type="text" class="wiz-input" id="wizNome" placeholder="Es. Bando RIPAM 2026, Vigili VVF, Studio leggero...">
+              <input type="text" class="wiz-input" id="wizNome" placeholder="Es. Bando RIPAM 2026, Vigili VVF, Studio leggero..." value="${_esc(nomeScelto)}">
             </div>
           `}
 
@@ -691,6 +786,10 @@
           navigaA(STATE.pageCorrente);
         });
         document.getElementById('wizConferma').addEventListener('click', _onConferma);
+        const bCambiaBando = document.getElementById('wizCambiaBando');
+        if (bCambiaBando) bCambiaBando.addEventListener('click', () => { mostraSchermataBando = true; render(); });
+        const bRiapplica = document.getElementById('wizRiapplicaBando');
+        if (bRiapplica) bRiapplica.addEventListener('click', () => _applicaBando(bandoRiapplicabile));
         _aggiornaWizCount();
       }
 
@@ -737,6 +836,7 @@
           }
         }
         if (Object.keys(esclSerial).length > 0) pianoOut.argomentiEsclusi = esclSerial;
+        if (pesiOverride && Object.keys(pesiOverride).length > 0) pianoOut.pesiOverride = pesiOverride;
 
         if (editing) {
           // ── Modalità modifica: aggiorna piano del save esistente ──
@@ -766,6 +866,7 @@
           descrizione: descrPezzi.join(' · '),
           piano: pianoOut,
           rankIniziale: subIniziale,
+          bandoId: bandoIdSelezionato,
         });
 
         SavesCore.caricaSave(nuovo.id);

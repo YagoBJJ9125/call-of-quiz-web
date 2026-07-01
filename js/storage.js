@@ -13,6 +13,7 @@
   // ── Storage keys ──
   const SK_MANIFEST       = 'cm:manifest';
   const SK_PROGRAMMA      = 'cm:programma';
+  const SK_BANDI          = 'cm:bandi';         // catalogo preset piano per bando (opzionale)
   const SK_BANCA_PFX      = 'cm:banca:';        // + materia_id
   const SK_BANCA_CAT_PFX  = 'cm:banca_cat:';    // + materia_id (quiz categorizzati)
   const SK_PROGRESS       = 'cm:progress';

@@ -178,7 +178,12 @@
   function carSalvaXP(x)       { salvaInStorage(SK_CAR_XP, x); }
 
   // — Peso materia (helper condiviso con Ranked) —
+  // Priorità: pesiOverride del piano del save attivo (preset bando, vedi
+  // bandi_catalogo.json) > peso globale di programma_studio.json > 5.
   function carPesoMateria(materiaId) {
+    const save = (typeof SavesCore !== 'undefined') ? SavesCore.getSaveAttivo() : null;
+    const override = save && save.piano && save.piano.pesiOverride && save.piano.pesiOverride[materiaId];
+    if (typeof override === 'number') return override;
     if (!STATE.pacchetto || !STATE.pacchetto.programma) return 5;
     const mat = (STATE.pacchetto.programma.materie || []).find(m => m.id === materiaId);
     if (mat && typeof mat.peso === 'number') return mat.peso;

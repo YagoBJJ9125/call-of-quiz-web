@@ -109,6 +109,10 @@
         // Configurazione iniziale ranked (Fase 1: default, useremo i suggerimenti
         // dalla mappa % → rank nelle fasi successive)
         rankIniziale: opts.rankIniziale || 0,
+        // Id del preset bando da cui il piano è stato inizializzato (opzionale,
+        // vedi bandi_catalogo.json). Serve solo a mostrare il badge "da preset X"
+        // e a offrire il bottone "ri-applica preset" nel wizard di modifica.
+        bandoId: opts.bandoId || null,
       };
       const lista = getListaSaves();
       lista.push(save);
