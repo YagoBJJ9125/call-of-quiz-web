@@ -84,6 +84,12 @@
       try { window.SavesUI.init(); }
       catch (e) { console.error('SavesUI.init:', e); }
     }
+    // Pannello Bandi: patch navigazione pagina 'admin-bandi' (innocuo se mai
+    // raggiunta — la voce in Impostazioni compare solo se AdminPanel.enabled).
+    if (window.AdminPanel && window.AdminPanel._init) {
+      try { window.AdminPanel._init(); }
+      catch (e) { console.error('AdminPanel._init:', e); }
+    }
     // Backup automatici rotanti (solo Tauri): avvia lo scheduler.
     if (window.AutoBackup && window.AutoBackup.enabled) {
       try { window.AutoBackup.start(); }

@@ -180,6 +180,9 @@
             <div class="pill ${CONFIG.ordine === 'casuale' ? 'active' : ''}" onclick="setOrdine('casuale')">Casuale</div>
             <div class="pill ${CONFIG.ordine === 'peso'    ? 'active' : ''}" onclick="setOrdine('peso')">Per peso</div>
             <div class="pill ${CONFIG.ordine === 'materia' ? 'active' : ''}" onclick="setOrdine('materia')">Per materia</div>
+            ${(typeof carComposizioneBando === 'function' && carComposizioneBando()) ? `
+              <div class="pill ${CONFIG.ordine === 'bando' ? 'active' : ''}" onclick="setOrdine('bando')" title="Rispetta le proporzioni per materia del bando del save attivo">📦 Bando</div>
+            ` : ''}
           </div>
         </div>
 
@@ -667,7 +670,13 @@
       return;
     }
     let pescati;
-    if (CONFIG.ordine === 'casuale') {
+    if (CONFIG.ordine === 'bando') {
+      const composizione = (typeof carComposizioneBando === 'function') ? carComposizioneBando() : null;
+      pescati = (typeof pescaProporzionale === 'function')
+                ? pescaProporzionale(disponibili, CONFIG.nQuiz, composizione, { getMateriaId: q => q._materia_id })
+                : null;
+      if (!pescati) pescati = shuffle([...disponibili]).slice(0, CONFIG.nQuiz);   // fallback: nessuna composizione attiva
+    } else if (CONFIG.ordine === 'casuale') {
       pescati = shuffle([...disponibili]).slice(0, CONFIG.nQuiz);
     } else if (CONFIG.ordine === 'peso') {
       const pesi = mappaArgomentiPesi();

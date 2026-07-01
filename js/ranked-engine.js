@@ -289,16 +289,56 @@
       if (pool.length === 0) return [];
     }
 
-    const { nuovi, errori, review, consolidati } = rankedClassificaPool(pool);
-
     // FILTRO SOLO ERRATI: round composto esclusivamente dagli errori aperti
     // del pool (eventualmente già ristretto al nodo dell'Analisi).
     if (opts.soloErrati) {
+      const { errori } = rankedClassificaPool(pool);
       const presi = _rankedPescaPesata(errori, Math.min(n, errori.length));
       shuffle(presi);
       return presi;
     }
 
+    // ── Composizione per bando: quota ESATTA per materia (vedi
+    // composizione-bando.js). La priorità Ranked (errori→deboli→mix lega→
+    // fill-up) resta intatta DENTRO ogni quota — non sull'intero round.
+    // Bypassata se il pool è già ristretto (opts.restrictIds, selezione
+    // mirata da Analisi, non un round "libero").
+    const composizione = (!opts.restrictIds && typeof carComposizioneBando === 'function')
+                          ? carComposizioneBando() : null;
+    if (composizione) {
+      const quote = ripartisciProporzionale(n, composizione);
+      const scelti = [];
+      const giaPresi = new Set();
+      for (const mid of Object.keys(quote)) {
+        if (quote[mid] <= 0) continue;
+        const subPool = pool.filter(p => p.materiaId === mid);
+        for (const item of _rankedComponiRound(subPool, quote[mid])) {
+          if (!giaPresi.has(item.id)) { scelti.push(item); giaPresi.add(item.id); }
+        }
+      }
+      // Materie senza quota nel piano + eventuale deficit (materia con
+      // meno quiz disponibili della sua quota): stesso fill-up di sempre,
+      // sul pool residuo.
+      if (scelti.length < n) {
+        const residuo = pool.filter(p => !giaPresi.has(p.id));
+        for (const item of _rankedComponiRound(residuo, n - scelti.length)) {
+          if (!giaPresi.has(item.id)) { scelti.push(item); giaPresi.add(item.id); }
+        }
+      }
+      shuffle(scelti);
+      return scelti.slice(0, n);
+    }
+
+    return _rankedComponiRound(pool, n);
+  }
+
+  // — Compone un round dal pool dato: errori prioritari, override materie
+  //   deboli, mix di lega, fill-up. Logica INVARIATA rispetto a prima del
+  //   layer bando — ora riusabile su un sotto-pool (una singola materia)
+  //   quando rankedSelezionaRound applica una composizione per bando.
+  function _rankedComponiRound(pool, n) {
+    if (!pool || pool.length === 0 || n <= 0) return [];
+    const { nuovi, errori, review, consolidati } = rankedClassificaPool(pool);
     const mix = rankedMixCorrente();   // [pNuovi, pReview, pCons]
 
     const scelti = [];

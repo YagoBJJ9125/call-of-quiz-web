@@ -679,6 +679,17 @@
         </div>
       </div>
 
+      <div class="settings-section" id="set-adminpanel-sec" style="display:none;">
+        <h4 class="settings-h">🛠 Pannello Bandi (avanzato)</h4>
+        <p class="settings-desc">
+          Editor del catalogo bandi: materie richieste, import banche quiz, proporzioni.
+          Scrive direttamente i file del progetto — solo per build di sviluppo.
+        </p>
+        <div class="settings-actions">
+          <button class="btn" id="set-adminpanel-apri">🛠 Apri pannello</button>
+        </div>
+      </div>
+
       <div class="settings-section">
         <h4 class="settings-h">🎨 Aspetto</h4>
         <div class="settings-row">
@@ -966,6 +977,14 @@
           try { await window.AppUpdater.check(false); }
           finally { bUpd.disabled = false; bUpd.textContent = old; }
         };
+      }
+
+      // Pannello Bandi (solo Tauri dev, cfg!(debug_assertions) lato Rust).
+      if (window.AdminPanel && window.AdminPanel.enabled) {
+        const asec = document.getElementById('set-adminpanel-sec');
+        if (asec) asec.style.display = '';
+        const bAdmin = document.getElementById('set-adminpanel-apri');
+        if (bAdmin) bAdmin.onclick = () => window.AdminPanel.apriPannello();
       }
 
       document.getElementById('set-export').onclick = esportaProgressi;

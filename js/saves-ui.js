@@ -471,8 +471,10 @@
       let bandoIdSelezionato = null;                // id del bando applicato (badge + salvataggio)
       let nomeScelto = '';                          // nome suggerito da precompilare in wizNome
 
-      // Catalogo bandi disponibile (opzionale — bundle senza bandi_catalogo.json → [])
-      const catalogoBandi = (STATE.pacchetto.bandi || []);
+      // Catalogo bandi disponibile (opzionale — bundle senza bandi_catalogo.json → []).
+      // Le bozze (stato:'bozza', dal Pannello Bandi admin) restano invisibili agli
+      // utenti finché non completate e pubblicate.
+      const catalogoBandi = (STATE.pacchetto.bandi || []).filter(b => b.stato !== 'bozza');
 
       // Precompila in base alla modalità
       let saveEsistente = null;
@@ -498,9 +500,14 @@
         for (const m of moduli) sel.add(m.materia_id);
       }
 
-      // Schermata scelta bando: solo in creazione, solo se esiste un catalogo bandi.
-      // Finché non si sceglie (preset o "parti da zero") la griglia materie resta nascosta.
-      let mostraSchermataBando = !editing && catalogoBandi.length > 0;
+      // Due viste selezionabili in ogni momento (tab), sia in creazione che in
+      // modifica: 'bando' = scegli un preset da bandi_catalogo.json, 'materie'
+      // = griglia manuale materia/argomento (quella storica). Le tab compaiono
+      // solo se esiste un catalogo bandi — altrimenti nessun cambio visibile.
+      // Default: in creazione parti dalla vista bando (se il catalogo non è
+      // vuoto), in modifica parti sempre dalla griglia (stai già modificando
+      // un piano esistente).
+      let vista = (!editing && catalogoBandi.length > 0) ? 'bando' : 'materie';
 
       function _applicaBando(bando) {
         sel.clear(); espansi.clear();
@@ -512,18 +519,8 @@
         });
         pesiOverride = Object.assign({}, (bando.piano && bando.piano.pesiOverride) || {});
         bandoIdSelezionato = bando.id;
-        nomeScelto = bando.nome || '';
-        mostraSchermataBando = false;
-        render();
-      }
-      function _partiDaZero() {
-        sel.clear(); espansi.clear();
-        for (const m of moduli) sel.add(m.materia_id);
-        Object.keys(argEsclusi).forEach(k => delete argEsclusi[k]);
-        pesiOverride = {};
-        bandoIdSelezionato = null;
-        nomeScelto = '';
-        mostraSchermataBando = false;
+        if (!editing) nomeScelto = bando.nome || '';
+        vista = 'materie';
         render();
       }
 
@@ -628,18 +625,38 @@
         `;
       }
 
-      // ── Schermata 0 (solo creazione): scelta del bando come preset ──
+      // ── Tab bar condivisa: "📦 Piano Bandi" (preset) / "📋 Elenco Materie" (manuale) ──
+      // Visibile solo se esiste un catalogo bandi — altrimenti nessun cambio
+      // rispetto al comportamento storico (griglia diretta).
+      function _renderTabBar() {
+        if (catalogoBandi.length === 0) return '';
+        return `
+          <div class="wiz-tabs">
+            <button class="wiz-tab ${vista === 'bando' ? 'active' : ''}" id="wizTabBando">📦 Piano Bandi</button>
+            <button class="wiz-tab ${vista === 'materie' ? 'active' : ''}" id="wizTabMaterie">📋 Elenco Materie</button>
+          </div>
+        `;
+      }
+      function _attachTabListeners() {
+        const bTabBando = document.getElementById('wizTabBando');
+        if (bTabBando) bTabBando.addEventListener('click', () => { vista = 'bando'; render(); });
+        const bTabMaterie = document.getElementById('wizTabMaterie');
+        if (bTabMaterie) bTabMaterie.addEventListener('click', () => { vista = 'materie'; render(); });
+      }
+
+      // ── Vista "Piano Bandi": scelta di un preset da bandi_catalogo.json ──
       function _renderSchermataBando() {
         main.innerHTML = `
           <div class="page-header">
-            <h1 class="page-title">＋ Nuovo save</h1>
-            <p class="page-subtitle">Scegli un bando: materie, argomenti e pesi vengono precompilati dal preset, ma resti libero di modificare tutto nella schermata successiva.</p>
+            <h1 class="page-title">${editing ? `✎ Modifica piano: ${_esc(saveEsistente.nome)}` : '＋ Nuovo save'}</h1>
+            <p class="page-subtitle">Scegli un bando: materie, argomenti e pesi vengono precompilati dal preset, ma resti libero di modificare tutto nella vista "Elenco Materie".</p>
+            ${_renderTabBar()}
           </div>
           <div class="wiz-bando-grid">
             ${catalogoBandi.map(b => {
               const n = (b.piano && b.piano.materieIds || []).length;
               return `
-                <button class="wiz-bando-card" data-bando="${_esc(b.id)}">
+                <button class="wiz-bando-card ${bandoIdSelezionato === b.id ? 'sel' : ''}" data-bando="${_esc(b.id)}">
                   <div class="wiz-bando-nome">${_esc(b.nome)}</div>
                   ${b.ente ? `<div class="wiz-bando-ente">${_esc(b.ente)}</div>` : ''}
                   ${b.descrizione ? `<div class="wiz-bando-descr">${_esc(b.descrizione)}</div>` : ''}
@@ -647,22 +664,18 @@
                 </button>
               `;
             }).join('')}
-            <button class="wiz-bando-card wiz-bando-zero" id="wizBandoZero">
-              <div class="wiz-bando-nome">🎯 Parti da zero</div>
-              <div class="wiz-bando-descr">Nessun preset: scegli tu materie e argomenti dalla libreria completa.</div>
-            </button>
           </div>
           <div class="wiz-actions">
             <button class="btn btn-ghost" id="wizAnnulla">Annulla</button>
           </div>
         `;
+        _attachTabListeners();
         main.querySelectorAll('.wiz-bando-card[data-bando]').forEach(btn => {
           btn.addEventListener('click', () => {
             const b = catalogoBandi.find(x => x.id === btn.dataset.bando);
             if (b) _applicaBando(b);
           });
         });
-        document.getElementById('wizBandoZero').addEventListener('click', _partiDaZero);
         document.getElementById('wizAnnulla').addEventListener('click', () => {
           STATE.pageCorrente = oldPage || 'piani';
           navigaA(STATE.pageCorrente);
@@ -670,7 +683,7 @@
       }
 
       function render() {
-        if (mostraSchermataBando) { _renderSchermataBando(); return; }
+        if (vista === 'bando') { _renderSchermataBando(); return; }
 
         const calc = _calcolaRankSuggerito([...sel]);   // basato solo su materie
         const righe = moduli.map(_renderRigaMateria).join('');
@@ -681,22 +694,17 @@
           : 'Dai un nome alla tua nuova partita e scegli le materie su cui giocare. Tutto il resto (RP ranked, missioni, badge) parte vergine — il padroneggiamento globale invece resta e ti farà partire avanti dove già sai.';
 
         const bandoAttivo = bandoIdSelezionato ? catalogoBandi.find(b => b.id === bandoIdSelezionato) : null;
-        const bandoRiapplicabile = editing && saveEsistente.bandoId
-          ? catalogoBandi.find(b => b.id === saveEsistente.bandoId) : null;
+        const bandoRiapplicabile = bandoAttivo || null;
 
         main.innerHTML = `
           <div class="page-header">
             <h1 class="page-title">${titolo}</h1>
             <p class="page-subtitle">${subtitolo}</p>
-            ${!editing && catalogoBandi.length > 0 ? `
+            ${_renderTabBar()}
+            ${bandoAttivo ? `
               <div class="wiz-bando-badge">
-                ${bandoAttivo ? `Preset: <strong>${_esc(bandoAttivo.nome)}</strong>` : 'Nessun preset (selezione libera)'}
-                <button class="btn-link" id="wizCambiaBando">← cambia bando</button>
-              </div>
-            ` : ''}
-            ${bandoRiapplicabile ? `
-              <div class="wiz-bando-badge">
-                <button class="btn-link" id="wizRiapplicaBando">🔄 Ri-applica preset "${_esc(bandoRiapplicabile.nome)}"</button>
+                Preset: <strong>${_esc(bandoAttivo.nome)}</strong>
+                <button class="btn-link" id="wizRiapplicaBando">🔄 Ri-applica preset</button>
               </div>
             ` : ''}
           </div>
@@ -786,8 +794,7 @@
           navigaA(STATE.pageCorrente);
         });
         document.getElementById('wizConferma').addEventListener('click', _onConferma);
-        const bCambiaBando = document.getElementById('wizCambiaBando');
-        if (bCambiaBando) bCambiaBando.addEventListener('click', () => { mostraSchermataBando = true; render(); });
+        _attachTabListeners();
         const bRiapplica = document.getElementById('wizRiapplicaBando');
         if (bRiapplica) bRiapplica.addEventListener('click', () => _applicaBando(bandoRiapplicabile));
         _aggiornaWizCount();
@@ -840,7 +847,10 @@
 
         if (editing) {
           // ── Modalità modifica: aggiorna piano del save esistente ──
-          SavesCore.aggiornaPianoSave(editingId, pianoOut);
+          // bandoIdSelezionato riflette sempre lo stato corrente del wizard
+          // (invariato se l'utente non ha toccato la vista "Piano Bandi",
+          // aggiornato se ha applicato un preset diverso).
+          SavesCore.aggiornaPianoSave(editingId, pianoOut, bandoIdSelezionato);
           toast('Piano aggiornato: ' + saveEsistente.nome);
           aggiornaTopbarSaveChip();
           navigaA(returnPage);

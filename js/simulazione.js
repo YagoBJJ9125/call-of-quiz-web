@@ -102,6 +102,16 @@
       const quesIds = Object.keys(quesMat).sort((a, b) => quesMat[b].items.length - quesMat[a].items.length);
       const haKey = (typeof geminiHaKey === 'function') && geminiHaKey();
 
+      // Precompila il calibratore quiz con le quote del bando del save attivo
+      // (se presente): resta comunque modificabile a mano, è solo il default
+      // iniziale invece di partire da 0. Totale di default = 30 (stesso
+      // valore di default dell'input "Totale quiz della prova" sotto).
+      const TOTALE_DEFAULT_PRE = 30;
+      const composizioneSim = (typeof carComposizioneBando === 'function') ? carComposizioneBando() : null;
+      const quotePrefill = composizioneSim
+        ? ripartisciProporzionale(TOTALE_DEFAULT_PRE, composizioneSim)
+        : {};
+
       main.innerHTML = `
         <div class="page-header page-header-bg pagebg-mappa">
           <h1 class="page-title">🎓 Simulazione d'esame</h1>
@@ -139,12 +149,15 @@
               <input type="search" class="scr-search-big" id="sim-quiz-search" placeholder="Cerca una materia…">
             </div>
             <div class="sim-calib" id="sim-calib-quiz">
-              ${quizIds.length ? quizIds.map(mid => `
+              ${quizIds.length ? quizIds.map(mid => {
+                const prefill = Math.min(quotePrefill[mid] || 0, quizMat[mid].items.length);
+                return `
                 <div class="sim-calib-row" data-nome="${_esc(quizMat[mid].nome.toLowerCase())}">
                   <span class="sim-calib-nome">${_esc(quizMat[mid].nome)}</span>
                   <span class="sim-calib-disp">disp. ${quizMat[mid].items.length}</span>
-                  <input type="number" class="sim-calib-input" data-sim-qmat="${_esc(mid)}" data-max="${quizMat[mid].items.length}" value="0" min="0" max="${quizMat[mid].items.length}">
-                </div>`).join('') : '<div class="sim-vuoto">Nessuna banca quiz disponibile (controlla il piano del save).</div>'}
+                  <input type="number" class="sim-calib-input" data-sim-qmat="${_esc(mid)}" data-max="${quizMat[mid].items.length}" value="${prefill}" min="0" max="${quizMat[mid].items.length}">
+                </div>`;
+              }).join('') : '<div class="sim-vuoto">Nessuna banca quiz disponibile (controlla il piano del save).</div>'}
             </div>
           </div>
 

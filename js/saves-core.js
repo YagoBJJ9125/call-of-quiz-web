@@ -163,11 +163,12 @@
       return true;
     }
 
-    function aggiornaPianoSave(id, piano) {
+    function aggiornaPianoSave(id, piano, bandoId) {
       const lista = getListaSaves();
       const s = lista.find(x => x.id === id);
       if (!s) return false;
       s.piano = piano || { materieIds: [] };
+      if (bandoId !== undefined) s.bandoId = bandoId;
       _salvaListaSaves(lista);
       return true;
     }

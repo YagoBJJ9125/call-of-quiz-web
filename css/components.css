@@ -878,7 +878,7 @@
     font-family: inherit;
   }
   .wiz-bando-card:hover { border-color: var(--neon-cyan, #34E5FF); transform: translateY(-2px); }
-  .wiz-bando-card.wiz-bando-zero { border-style: dashed; }
+  .wiz-bando-card.sel { border-color: var(--neon-cyan, #34E5FF); background: linear-gradient(135deg, rgba(52,229,255,0.08), var(--bg-card, #181822)); }
   .wiz-bando-nome { font-size: 15px; font-weight: 700; color: var(--text-primary, #E8DFD1); margin-bottom: 4px; }
   .wiz-bando-ente { font-size: 11px; color: var(--neon-cyan, #34E5FF); margin-bottom: 6px; }
   .wiz-bando-descr { font-size: 12px; color: var(--text-secondary, #b8aea0); line-height: 1.4; margin-bottom: 8px; }
@@ -898,6 +898,27 @@
     cursor: pointer; text-decoration: underline;
   }
   .btn-link:hover { color: var(--neon-violet, #A06BFF); }
+
+  .wiz-tabs {
+    display: flex; gap: 8px;
+    margin-top: 12px;
+  }
+  .wiz-tab {
+    padding: 7px 16px;
+    background: var(--bg-card, #181822);
+    border: 1px solid var(--border-medium, rgba(232,223,209,0.18));
+    border-radius: 8px;
+    color: var(--text-secondary, #b8aea0);
+    font-size: 13px; font-weight: 600; font-family: inherit;
+    cursor: pointer;
+    transition: all 0.12s ease;
+  }
+  .wiz-tab:hover { color: var(--text-primary, #E8DFD1); }
+  .wiz-tab.active {
+    background: linear-gradient(135deg, rgba(52,229,255,0.14), var(--bg-card, #181822));
+    border-color: var(--neon-cyan, #34E5FF);
+    color: var(--neon-cyan, #34E5FF);
+  }
 
   /* ═══════════════════════════════════════════════════════
      Toast propagazione RP — feedback live cross-save
