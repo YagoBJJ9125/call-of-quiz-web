@@ -1,0 +1,263 @@
+/* ═══════════════════════════════════════════════════════
+   TEMI AGGIUNTIVI — override delle variabili CSS di base.css.
+   Ogni tema è attivo con  <body class="theme-<nome>">.
+   I temi CHIARI (oceano, sakura) vengono applicati INSIEME a
+   .theme-light: ereditano tutti i ritocchi strutturali del tema
+   chiaro (input, modali, bordi…) e qui ridefiniscono solo la
+   palette. Questo file va caricato DOPO theme-light.css.
+   Il registro dei temi vive in js/nav.js (const TEMI).
+   ═══════════════════════════════════════════════════════ */
+
+/* ═══════════════ 📘 BLU CONCORSO (scuro) ═══════════════
+   Ispirato ai simulatori concorsi: navy profondo, blu tenue
+   come azione primaria, verde per i successi, font Nunito
+   arrotondato e leggero. */
+body.theme-concorsando {
+  /* Superfici (navy) */
+  --bg-deepest: #161d2b;
+  --bg-deep:    #1b2333;
+  --bg-card:    #212b3f;
+  --bg-elev:    #283349;
+  --bg-hover:   #2f3b54;
+
+  /* Testi (bianco-azzurro morbido) */
+  --text-primary:   #eef2f8;
+  --text-secondary: #a9b6cc;
+  --text-muted:     #7686a0;
+  --text-dim:       #4a5670;
+
+  /* Accenti — blu tenue primario, verde "materia", rosso soft */
+  --amber:        #6ea8fe;
+  --amber-bright: #8cbcff;
+  --amber-dim:    #2c4470;
+  --sage:         #34c98e;
+  --sage-bright:  #4adfa4;
+  --sage-dim:     #1f5c44;
+  --rust:         #f0716e;
+  --rust-bright:  #ff8a85;
+  --rust-dim:     #703434;
+
+  /* Strutture */
+  --border-soft:   rgba(200, 215, 240, 0.07);
+  --border-medium: rgba(200, 215, 240, 0.14);
+  --border-strong: rgba(200, 215, 240, 0.28);
+  --shadow-card:   0 4px 12px rgba(8, 12, 22, 0.45);
+  --shadow-deep:   0 16px 48px rgba(8, 12, 22, 0.65);
+
+  /* Alias componenti recenti */
+  --bg:     #161d2b;
+  --text:   #eef2f8;
+  --border: rgba(200, 215, 240, 0.14);
+
+  --neon-cyan:   #6ea8fe;
+  --neon-violet: #9b8cff;
+  --neon-lime:   #4adfa4;
+  --neon-gold:   #ffcf6e;
+
+  /* Font leggero e arrotondato */
+  --font-display: 'Nunito', 'Inter', sans-serif;
+  --font-body:    'Nunito', 'Inter', sans-serif;
+}
+body.theme-concorsando { background: var(--bg-deepest); letter-spacing: 0.1px; }
+/* Texture di fondo: aloni blu al posto di quelli ambra/salvia */
+body.theme-concorsando::before {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(110, 168, 254, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 85% 80%, rgba(52, 201, 142, 0.04) 0%, transparent 50%);
+}
+
+/* ═══════════════ 🌊 OCEANO (chiaro) ═══════════════
+   Azzurro tenue su bianco: arioso, rilassante. Si appoggia a
+   .theme-light per i ritocchi strutturali. */
+body.theme-oceano {
+  --bg-deepest: #f2f7fc;
+  --bg-deep:    #e7eff8;
+  --bg-card:    #ffffff;
+  --bg-elev:    #ffffff;
+  --bg-hover:   #e3edf8;
+
+  --text-primary:   #1f2d3d;
+  --text-secondary: #4a5d73;
+  --text-muted:     #7d8fa5;
+  --text-dim:       #aebccc;
+
+  --amber:        #3673d9;
+  --amber-bright: #2c63c0;
+  --amber-dim:    #cfdff5;
+  --sage:         #2f9e6e;
+  --sage-bright:  #268a5e;
+  --sage-dim:     #cbe8db;
+  --rust:         #d05656;
+  --rust-bright:  #bd4747;
+  --rust-dim:     #f2d4d4;
+
+  --border-soft:   rgba(31, 45, 61, 0.06);
+  --border-medium: rgba(31, 45, 61, 0.13);
+  --border-strong: rgba(31, 45, 61, 0.24);
+  --shadow-card:   0 1px 3px rgba(31, 45, 61, 0.10);
+  --shadow-deep:   0 10px 34px rgba(31, 45, 61, 0.16);
+
+  --bg:     #f2f7fc;
+  --text:   #1f2d3d;
+  --border: rgba(31, 45, 61, 0.13);
+
+  --neon-cyan:   #1e7a9e;
+  --neon-violet: #6a55b8;
+  --neon-lime:   #4f8a2e;
+  --neon-gold:   #a97f10;
+
+  --font-display: 'Nunito', 'Inter', sans-serif;
+}
+body.theme-oceano { background: var(--bg-deepest); }
+body.theme-oceano .btn-primary { background: var(--amber); border-color: var(--amber); }
+body.theme-oceano .btn-primary:hover { background: var(--amber-bright); border-color: var(--amber-bright); }
+body.theme-oceano .nav-item.active { color: var(--amber); }
+
+/* ═══════════════ 🟣 NEON NOTTURNO (scuro) ═══════════════
+   Viola profondo + ciano elettrico, titoli Orbitron: per le
+   sessioni notturne in modalità videogioco. */
+body.theme-cyber {
+  --bg-deepest: #0d0a1a;
+  --bg-deep:    #131024;
+  --bg-card:    #191430;
+  --bg-elev:    #221b40;
+  --bg-hover:   #2a2150;
+
+  --text-primary:   #ece8ff;
+  --text-secondary: #b3aad6;
+  --text-muted:     #7a6fa3;
+  --text-dim:       #4a4370;
+
+  --amber:        #22d3ee;
+  --amber-bright: #67e8f9;
+  --amber-dim:    #164e63;
+  --sage:         #a3e635;
+  --sage-bright:  #bef264;
+  --sage-dim:     #4d661f;
+  --rust:         #ff4d9e;
+  --rust-bright:  #ff77b5;
+  --rust-dim:     #7a2450;
+
+  --border-soft:   rgba(236, 232, 255, 0.07);
+  --border-medium: rgba(236, 232, 255, 0.14);
+  --border-strong: rgba(236, 232, 255, 0.28);
+  --shadow-card:   0 4px 14px rgba(4, 2, 12, 0.55);
+  --shadow-deep:   0 16px 48px rgba(4, 2, 12, 0.75);
+
+  --bg:     #0d0a1a;
+  --text:   #ece8ff;
+  --border: rgba(236, 232, 255, 0.14);
+
+  --neon-cyan:   #34e5ff;
+  --neon-violet: #a06bff;
+  --neon-lime:   #b6ff3d;
+  --neon-gold:   #ffd23d;
+
+  --font-display: 'Orbitron', 'JetBrains Mono', monospace;
+}
+body.theme-cyber { background: var(--bg-deepest); }
+body.theme-cyber::before {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(160, 107, 255, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 85% 80%, rgba(52, 229, 255, 0.06) 0%, transparent 50%);
+}
+body.theme-cyber .btn-primary {
+  box-shadow: 0 0 0 1px rgba(52, 229, 255, 0.3), 0 6px 18px rgba(34, 211, 238, 0.25);
+}
+body.theme-cyber .nav-item.active {
+  box-shadow: inset 3px 0 0 0 var(--neon-violet), 0 0 18px rgba(160, 107, 255, 0.12);
+}
+
+/* ═══════════════ 🌲 FORESTA (scuro) ═══════════════
+   Verde bosco e muschio, caldo e naturale: per studiare senza
+   affaticare gli occhi. Titoli serif come il tema base. */
+body.theme-foresta {
+  --bg-deepest: #101a14;
+  --bg-deep:    #15211a;
+  --bg-card:    #1a2921;
+  --bg-elev:    #223429;
+  --bg-hover:   #2a4033;
+
+  --text-primary:   #e4eee6;
+  --text-secondary: #a8bfae;
+  --text-muted:     #6f8a77;
+  --text-dim:       #435447;
+
+  --amber:        #92c268;
+  --amber-bright: #a8d67f;
+  --amber-dim:    #43663a;
+  --sage:         #7fa074;
+  --sage-bright:  #9bc190;
+  --sage-dim:     #4d6647;
+  --rust:         #d98e4a;
+  --rust-bright:  #e8a35f;
+  --rust-dim:     #7a4e28;
+
+  --border-soft:   rgba(228, 238, 230, 0.07);
+  --border-medium: rgba(228, 238, 230, 0.14);
+  --border-strong: rgba(228, 238, 230, 0.28);
+  --shadow-card:   0 4px 12px rgba(4, 10, 6, 0.45);
+  --shadow-deep:   0 16px 48px rgba(4, 10, 6, 0.65);
+
+  --bg:     #101a14;
+  --text:   #e4eee6;
+  --border: rgba(228, 238, 230, 0.14);
+
+  --neon-cyan:   #4fd8c0;
+  --neon-violet: #9b8cff;
+  --neon-lime:   #b6ff3d;
+  --neon-gold:   #ffd23d;
+}
+body.theme-foresta { background: var(--bg-deepest); }
+body.theme-foresta::before {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(146, 194, 104, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 85% 80%, rgba(127, 160, 116, 0.04) 0%, transparent 50%);
+}
+
+/* ═══════════════ 🌸 SAKURA (chiaro) ═══════════════
+   Rosa cipria su crema: delicato, titoli serif eleganti.
+   Si appoggia a .theme-light per i ritocchi strutturali. */
+body.theme-sakura {
+  --bg-deepest: #fdf6f8;
+  --bg-deep:    #faeef2;
+  --bg-card:    #ffffff;
+  --bg-elev:    #ffffff;
+  --bg-hover:   #f7e7ee;
+
+  --text-primary:   #3d2e35;
+  --text-secondary: #6b5560;
+  --text-muted:     #99818c;
+  --text-dim:       #c4aeb8;
+
+  --amber:        #d4638c;
+  --amber-bright: #c25379;
+  --amber-dim:    #f2d3df;
+  --sage:         #5f9a6e;
+  --sage-bright:  #4f8a5e;
+  --sage-dim:     #d0e6d6;
+  --rust:         #c05656;
+  --rust-bright:  #ad4747;
+  --rust-dim:     #efd0d0;
+
+  --border-soft:   rgba(61, 46, 53, 0.06);
+  --border-medium: rgba(61, 46, 53, 0.13);
+  --border-strong: rgba(61, 46, 53, 0.24);
+  --shadow-card:   0 1px 3px rgba(61, 46, 53, 0.10);
+  --shadow-deep:   0 10px 34px rgba(61, 46, 53, 0.16);
+
+  --bg:     #fdf6f8;
+  --text:   #3d2e35;
+  --border: rgba(61, 46, 53, 0.13);
+
+  --neon-cyan:   #2c7a8c;
+  --neon-violet: #8a5bb0;
+  --neon-lime:   #5f8a2e;
+  --neon-gold:   #b8860b;
+
+  --font-display: 'Source Serif 4', 'Tiempos', Georgia, serif;
+}
+body.theme-sakura { background: var(--bg-deepest); }
+body.theme-sakura .btn-primary { background: var(--amber); border-color: var(--amber); }
+body.theme-sakura .btn-primary:hover { background: var(--amber-bright); border-color: var(--amber-bright); }
+body.theme-sakura .nav-item.active { color: var(--amber); }

@@ -552,11 +552,29 @@
   }
   function salvaAspetto(s) { salvaInStorage(SK_ASPETTO, s); }
 
-  // ═══════ Tema (scuro / chiaro stile Claude) ═══════
-  const SK_TEMA = 'cm:impostazioni:tema';   // 'scuro' | 'chiaro' (GLOBAL)
-  function caricaTema() { return caricaDaStorage(SK_TEMA) || 'scuro'; }
+  // ═══════ Temi (registro — palette in css/theme-light.css + css/temi.css) ═══════
+  // I temi chiari extra includono 'theme-light' per ereditare i ritocchi
+  // strutturali (input, modali, bordi) e sovrascrivono solo la palette.
+  const SK_TEMA = 'cm:impostazioni:tema';   // chiave del tema scelto (GLOBAL)
+  const TEMI = {
+    scuro:       { label: '🌙 Scuro (default)',           classi: [] },
+    chiaro:      { label: '☀️ Chiaro (stile Claude)',      classi: ['theme-light'] },
+    concorsando: { label: '📘 Blu Concorso (scuro)',       classi: ['theme-concorsando'] },
+    oceano:      { label: '🌊 Oceano (chiaro)',            classi: ['theme-light', 'theme-oceano'] },
+    cyber:       { label: '🟣 Neon notturno (scuro)',      classi: ['theme-cyber'] },
+    foresta:     { label: '🌲 Foresta (scuro)',            classi: ['theme-foresta'] },
+    sakura:      { label: '🌸 Sakura (chiaro)',            classi: ['theme-light', 'theme-sakura'] },
+  };
+  function caricaTema() {
+    const t = caricaDaStorage(SK_TEMA) || 'scuro';
+    return TEMI[t] ? t : 'scuro';
+  }
   function applicaTema() {
-    document.body.classList.toggle('theme-light', caricaTema() === 'chiaro');
+    const attivo = TEMI[caricaTema()];
+    [...document.body.classList]
+      .filter(c => c.startsWith('theme-'))
+      .forEach(c => document.body.classList.remove(c));
+    attivo.classi.forEach(c => document.body.classList.add(c));
   }
   window.applicaTema = applicaTema;
 
@@ -695,8 +713,9 @@
         <div class="settings-row">
           <span>Tema dell'interfaccia</span>
           <select class="car-input" id="set-tema" style="min-width:160px">
-            <option value="scuro"  ${caricaTema() === 'scuro'  ? 'selected' : ''}>🌙 Scuro (default)</option>
-            <option value="chiaro" ${caricaTema() === 'chiaro' ? 'selected' : ''}>☀️ Chiaro (stile Claude)</option>
+            ${Object.entries(TEMI).map(([val, t]) =>
+              `<option value="${val}" ${caricaTema() === val ? 'selected' : ''}>${t.label}</option>`
+            ).join('')}
           </select>
         </div>
         <p class="settings-desc">
