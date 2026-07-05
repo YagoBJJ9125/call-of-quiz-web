@@ -334,6 +334,21 @@
     margin-bottom: 26px;
   }
 
+  .quiz-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+
+  .quiz-image {
+    max-width: 100%;
+    max-height: 340px;
+    border: 1px solid var(--border-soft);
+    border-radius: 6px;
+    background: var(--bg-deep);
+  }
+
   .quiz-options {
     display: flex;
     flex-direction: column;
@@ -378,6 +393,13 @@
     flex: 1;
     font-size: 14px;
     color: var(--text-primary);
+    user-select: text;
+    cursor: text;
+  }
+
+  .quiz-question {
+    user-select: text;
+    cursor: text;
   }
 
   .quiz-option.selected { border-color: var(--amber); background: rgba(212, 154, 63, 0.08); }

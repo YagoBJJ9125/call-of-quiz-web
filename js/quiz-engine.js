@@ -57,6 +57,13 @@
         <div class="quiz-card">
           <div class="quiz-materia-tag">${q.materia || q._materia_id || '—'}</div>
           <div class="quiz-question">${escapeHTML(q.domanda)}</div>
+          ${Array.isArray(q.immagini) && q.immagini.length > 0 ? `
+            <div class="quiz-images">
+              ${q.immagini.filter(im => im && (im.file || im.base64)).map(im => `
+                <img class="quiz-image" src="${im.file || im.base64}" alt="Immagine quiz" />
+              `).join('')}
+            </div>
+          ` : ''}
           <div class="quiz-options">
             ${q._opzioni_mescolate.map((opt, idx) => {
               const letter = String.fromCharCode(65 + idx);
