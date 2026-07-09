@@ -49,6 +49,10 @@
     document.getElementById('modal').classList.remove('active');
     const btnConf = document.getElementById('modalConfirm');
     if (btnConf) btnConf.style.display = '';
+    // Ripristina l'etichetta del bottone "Annulla" (può essere stata
+    // rinominata, es. "Continua prova" nel guard di uscita prova).
+    const btnCancel = document.querySelector('#modal .modal-actions .btn-ghost');
+    if (btnCancel) btnCancel.textContent = 'Annulla';
   }
 
   // ═══════ Storage (IndexedDB per dati grossi, localStorage per piccoli) ═══════

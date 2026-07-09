@@ -16,6 +16,15 @@
   // figura/immagine/grafico che l'app non può mostrare. Questi quiz vengono
   // esclusi da tutti i pool (Ranked + Libero) per evitare risposte impossibili.
   function quizRichiedeImmagine(quiz) {
+    // Se il quiz HA le immagini, l'app le mostra: non va mai escluso.
+    // (Le banche aggiornate includono le immagini dei quiz di logica; senza
+    // questo check i quiz con figura venivano esclusi anche quando la figura
+    // era disponibile, mentre i vecchi doppioni SENZA figura passavano.)
+    if (Array.isArray(quiz.immagini) && quiz.immagini.length > 0) return false;
+    // Domande che citano un'operazione mostrata solo in figura (residui della
+    // vecchia banca senza immagini): senza numeri nel testo sono irrisolvibili.
+    const dom = quiz.domanda || quiz.testo || '';
+    if (/(?:della|la) seguente operazione[.:]?\s*$/i.test(dom.trim()) && !/\d/.test(dom)) return true;
     const PATTERN = [
       /nell['’\s]?immagin/i,
       /nella figura/i, /dalla figura/i, /osserva la figura/i, /vedi la figura/i,

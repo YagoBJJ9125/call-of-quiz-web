@@ -59,8 +59,8 @@
           <div class="quiz-question">${escapeHTML(q.domanda)}</div>
           ${Array.isArray(q.immagini) && q.immagini.length > 0 ? `
             <div class="quiz-images">
-              ${q.immagini.filter(im => im && (im.file || im.base64)).map(im => `
-                <img class="quiz-image" src="${im.file || im.base64}" alt="Immagine quiz" />
+              ${[...new Set(q.immagini.map(im => im && (im.file || im.base64)).filter(Boolean))].map(src => `
+                <img class="quiz-image" src="${src}" alt="Immagine quiz" />
               `).join('')}
             </div>
           ` : ''}
@@ -164,7 +164,59 @@
     });
 
     aggiornaTimerDisplay();
+    provaGuardArma();   // arma la protezione "uscita accidentale" (back/refresh)
   }
+
+  // ═══════════════════════════════════════════════════════
+  // GUARD USCITA PROVA — evita di perdere una prova in corso per
+  // Back dello smartphone, refresh o chiusura del browser.
+  //   • refresh / chiusura → dialog nativo del browser (beforeunload)
+  //   • Back (browser/telefono) → modale "Sei sicuro di voler uscire?"
+  //     con "Continua prova" (annulla) / "Esci" (annulla la prova).
+  // In corso = batteria/preselettiva con quiz in RAM non ancora terminata.
+  // ═══════════════════════════════════════════════════════
+  function provaInCorso() {
+    return !!(typeof SESSIONE !== 'undefined' && SESSIONE && Array.isArray(SESSIONE.quiz)
+              && SESSIONE.quiz.length > 0 && !SESSIONE.terminata);
+  }
+
+  let _provaGuardArmato = false;
+  function provaGuardArma() {
+    if (_provaGuardArmato || !provaInCorso()) return;
+    try { history.pushState({ _provaGuard: true }, ''); } catch (_) {}
+    _provaGuardArmato = true;
+  }
+
+  window.addEventListener('beforeunload', (e) => {
+    if (!provaInCorso()) return;
+    e.preventDefault();
+    e.returnValue = '';   // richiesto da alcuni browser per mostrare il prompt
+    return '';
+  });
+
+  window.addEventListener('popstate', () => {
+    if (!provaInCorso()) { _provaGuardArmato = false; return; }
+    // Reinserisco subito uno stato: così l'utente NON esce finché non conferma.
+    try { history.pushState({ _provaGuard: true }, ''); } catch (_) {}
+    const dest = (SESSIONE.config && SESSIONE.config._simulazione) ? 'simulazione'
+               : (SESSIONE.config && SESSIONE.config._ranked)      ? 'ranked'
+               : 'libera';
+    showModal(
+      'Sei sicuro di voler uscire?',
+      'La prova in corso verrà annullata.',
+      () => {
+        _provaGuardArmato = false;
+        if (SESSIONE && SESSIONE.timerInterval) clearInterval(SESSIONE.timerInterval);
+        SESSIONE = null;
+        navigaA(dest);
+        aggiornaNavSidebar(dest);
+      },
+      'Esci'
+    );
+    // Rinomino il bottone "Annulla" del modale in "Continua prova".
+    const cancel = document.querySelector('#modal .modal-actions .btn-ghost');
+    if (cancel) cancel.textContent = 'Continua prova';
+  });
 
   function escapeHTML(s) {
     if (s == null) return '';
@@ -360,9 +412,17 @@
     if (SESSIONE.config && SESSIONE.config._simulazione) {
       if (confermaUtente && !SESSIONE.terminata) {
         const fatti = SESSIONE.quiz.filter(q => q._risposta_data !== null && q._risposta_data !== 'SKIP').length;
+        const primaNonRisp = SESSIONE.quiz.findIndex(q => q._risposta_data === null || q._risposta_data === 'SKIP');
+        const extra = primaNonRisp >= 0
+          ? `<button class="btn" id="sim-vai-nonrisp" style="margin-top:14px;width:100%">↩ Vai alla prima domanda non risposta</button>`
+          : '';
         showModal('Consegnare la preselettiva?',
-          `Hai risposto a <strong>${fatti} di ${SESSIONE.quiz.length}</strong> quiz. Le non risposte verranno conteggiate col punteggio scelto. Consegnare ora?`,
+          `Hai risposto a <strong>${fatti} di ${SESSIONE.quiz.length}</strong> quiz. Le non risposte verranno conteggiate col punteggio scelto. Consegnare ora?${extra}`,
           () => terminaBatteria(false), 'Sì, consegna');
+        // Bottone opzionale: porta alla prima domanda lasciata in bianco invece
+        // di consegnare (evita la caccia manuale al quiz mancante).
+        const bNon = document.getElementById('sim-vai-nonrisp');
+        if (bNon) bNon.addEventListener('click', () => { closeModal(); vaiAQuiz(primaNonRisp); });
         return;
       }
       SESSIONE.terminata = true;

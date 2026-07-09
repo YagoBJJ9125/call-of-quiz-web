@@ -23,7 +23,46 @@
 
     const SK_CORRENTE = 'cm:simulazione:corrente';
     const SK_STORICO  = 'cm:simulazione:storico';
+    const SK_CONFIG   = 'cm:simulazione:config';   // ultime impostazioni usate (PER-SAVE via monkey-patch? no: globale sim)
     const SOGLIA = 21;
+
+    // ─── Config persistita (ultime impostazioni della simulazione) ───
+    // Ricordata tra una prova e l'altra: totale quiz, punteggi, tempi,
+    // materie e numero di quiz per materia, toggle "ignora piano". La
+    // Simulazione è INDIPENDENTE dal Ranked: la sua selezione materie non
+    // tocca il piano del save (e viceversa).
+    function _loadConfigSalvata() { try { return caricaDaStorage(SK_CONFIG) || {}; } catch (_) { return {}; } }
+    function _saveConfigSalvata(cfg) { try { salvaInStorage(SK_CONFIG, cfg); } catch (_) {} }
+
+    // ─── Bando del save attivo + pesi/percentuali per materia ───
+    function _bandoAttivo() {
+      try {
+        if (typeof SavesCore === 'undefined') return null;
+        const sv = SavesCore.getSaveAttivo();
+        const bid = sv && sv.bandoId;
+        if (!bid || !STATE.pacchetto || !Array.isArray(STATE.pacchetto.bandi)) return null;
+        return STATE.pacchetto.bandi.find(b => b.id === bid) || null;
+      } catch (_) { return null; }
+    }
+    // Percentuali per materia dichiarate dal bando: preferisce `composizione`
+    // (percentuali esatte), altrimenti `pesiOverride` (pesi relativi). → {mid:peso}
+    function _pesiBandoAttivo() {
+      const b = _bandoAttivo();
+      const piano = b && b.piano;
+      if (!piano) return null;
+      const src = (piano.composizione && Object.keys(piano.composizione).length) ? piano.composizione
+                : (piano.pesiOverride && Object.keys(piano.pesiOverride).length) ? piano.pesiOverride
+                : null;
+      return src || null;
+    }
+    // Punteggi differenziati per materia dichiarati dal bando (opzionale):
+    //   bando.piano.punteggi = { default:{e,s,n}, situazionali:{e,s,n}, <mid>:{e,s,n} }
+    function _punteggiBandoAttivo() {
+      const b = _bandoAttivo();
+      return (b && b.piano && b.piano.punteggi) ? b.piano.punteggi : null;
+    }
+    // Una materia è "situazionale"? (punteggio spesso diverso nei bandi)
+    function _isSituazionale(mid) { return /situazional/i.test(String(mid || '')); }
 
     // Stato della prova corrente (in RAM; specchiato su storage).
     let SIM = null;
@@ -46,8 +85,9 @@
     function _votoClasse(v) { return v >= 27 ? 'sim-v-ottimo' : v >= SOGLIA ? 'sim-v-buono' : v >= 18 ? 'sim-v-suff' : 'sim-v-insuff'; }
 
     // ─── Dati: pool quiz per materia (rispetta il piano del save attivo) ───
-    function _quizPerMateria() {
-      const pool = (typeof rankedCostruisciPool === 'function') ? rankedCostruisciPool() : null;
+    function _quizPerMateria(ignoraPiano) {
+      const pool = (typeof rankedCostruisciPool === 'function')
+                    ? rankedCostruisciPool({ ignoraPiano: !!ignoraPiano }) : null;
       const map = {}; // materiaId → { nome, items:[] }
       if (!pool) return map;
       for (const it of pool) {
@@ -96,21 +136,45 @@
         return;
       }
 
-      const quizMat = _quizPerMateria();
+      // Config indipendente dal Ranked: ricorda le ultime impostazioni.
+      const cfg = _loadConfigSalvata();
+      const ignoraPiano = !!cfg.ignoraPiano;
+
+      const quizMat = _quizPerMateria(ignoraPiano);
       const quesMat = _quesitiPerMateria();
       const quizIds = Object.keys(quizMat).sort((a, b) => quizMat[b].items.length - quizMat[a].items.length);
       const quesIds = Object.keys(quesMat).sort((a, b) => quesMat[b].items.length - quesMat[a].items.length);
       const haKey = (typeof geminiHaKey === 'function') && geminiHaKey();
 
-      // Precompila il calibratore quiz con le quote del bando del save attivo
-      // (se presente): resta comunque modificabile a mano, è solo il default
-      // iniziale invece di partire da 0. Totale di default = 30 (stesso
-      // valore di default dell'input "Totale quiz della prova" sotto).
-      const TOTALE_DEFAULT_PRE = 30;
-      const composizioneSim = (typeof carComposizioneBando === 'function') ? carComposizioneBando() : null;
-      const quotePrefill = composizioneSim
-        ? ripartisciProporzionale(TOTALE_DEFAULT_PRE, composizioneSim)
-        : {};
+      // Default: ultime impostazioni salvate → altrimenti valori di fabbrica.
+      const dTot   = cfg.totQuiz   != null ? cfg.totQuiz   : 30;
+      const dTPre  = cfg.tempoPre  != null ? cfg.tempoPre  : 60;
+      const dOk    = cfg.punti && cfg.punti.e != null ? cfg.punti.e : 1;
+      const dKo    = cfg.punti && cfg.punti.s != null ? cfg.punti.s : 0;
+      const dNa    = cfg.punti && cfg.punti.n != null ? cfg.punti.n : 0;
+      const dIncPre = cfg.includePre     !== false;
+      const dIncScr = cfg.includeScritto !== false;
+      const dNQues = cfg.nQuesiti  != null ? cfg.nQuesiti  : 3;
+      const dTScr  = cfg.tempoScritto != null ? cfg.tempoScritto : 180;
+
+      // Punteggi differenziati per i quiz situazionali (task: es. +0,75/−0,15).
+      const bp = _punteggiBandoAttivo();
+      const situOn = cfg.situazionaliOn != null ? !!cfg.situazionaliOn : !!(bp && bp.situazionali);
+      const psrc   = (cfg.puntiSit) || (bp && bp.situazionali) || {};
+      const dSitOk = psrc.e != null ? psrc.e : 0.75;
+      const dSitKo = psrc.s != null ? psrc.s : -0.15;
+      const dSitNa = psrc.n != null ? psrc.n : 0;
+      const cÈSituazionale = quizIds.some(_isSituazionale);
+
+      // Prefill quiz/materia: ultime quote salvate → altrimenti auto dal bando.
+      const pesiBando = _pesiBandoAttivo();
+      const autoQuote = pesiBando ? ripartisciProporzionale(dTot, pesiBando) : {};
+      const prefillFor = (mid) => {
+        const v = (cfg.materiePre && cfg.materiePre[mid] != null) ? cfg.materiePre[mid] : (autoQuote[mid] || 0);
+        return Math.min(v, quizMat[mid].items.length);
+      };
+      // Materie quesiti già selezionate l'ultima volta.
+      const preSelQues = new Set(Array.isArray(cfg.materieScritto) ? cfg.materieScritto : []);
 
       main.innerHTML = `
         <div class="page-header page-header-bg pagebg-mappa">
@@ -126,38 +190,56 @@
           <!-- Quali prove -->
           <div class="sim-card">
             <div class="sim-card-h">1 · Quali prove includere</div>
-            <label class="sim-toggle"><input type="checkbox" id="sim-inc-pre" checked> <span>📝 Preselettiva (quiz a risposta multipla)</span></label>
-            <label class="sim-toggle"><input type="checkbox" id="sim-inc-scr" checked> <span>✍️ Prova scritta (quesiti aperti, valutazione IA)</span></label>
+            <label class="sim-toggle"><input type="checkbox" id="sim-inc-pre" ${dIncPre ? 'checked' : ''}> <span>📝 Preselettiva (quiz a risposta multipla)</span></label>
+            <label class="sim-toggle"><input type="checkbox" id="sim-inc-scr" ${dIncScr ? 'checked' : ''}> <span>✍️ Prova scritta (quesiti aperti, valutazione IA)</span></label>
           </div>
 
           <!-- PRESELETTIVA -->
           <div class="sim-card" id="sim-block-pre">
             <div class="sim-card-h">2 · Preselettiva — punteggi e tempo</div>
             <div class="sim-grid3">
-              <label class="sim-field"><span>Punti risposta esatta</span><input type="number" id="sim-p-ok" value="1" step="0.25"></label>
-              <label class="sim-field"><span>Punti risposta sbagliata</span><input type="number" id="sim-p-ko" value="0" step="0.25"></label>
-              <label class="sim-field"><span>Punti non risposta</span><input type="number" id="sim-p-na" value="0" step="0.25"></label>
-            </div>
-            <div class="sim-grid2">
-              <label class="sim-field"><span>Tempo a disposizione (minuti)</span><input type="number" id="sim-t-pre" value="60" min="1"></label>
-              <label class="sim-field"><span>Totale quiz della prova</span><input type="number" id="sim-tot-quiz" value="30" min="1"></label>
+              <label class="sim-field"><span>Punti risposta esatta</span><input type="number" id="sim-p-ok" value="${dOk}" step="0.25"></label>
+              <label class="sim-field"><span>Punti risposta sbagliata</span><input type="number" id="sim-p-ko" value="${dKo}" step="0.25"></label>
+              <label class="sim-field"><span>Punti non risposta</span><input type="number" id="sim-p-na" value="${dNa}" step="0.25"></label>
             </div>
 
-            <div class="sim-calib-h">Quiz per materia <span class="sim-calib-rem" id="sim-rem-quiz"></span></div>
+            <label class="sim-toggle" style="margin-top:6px"><input type="checkbox" id="sim-sit-on" ${situOn ? 'checked' : ''}> <span>🎯 Punteggio diverso per i quiz situazionali${cÈSituazionale ? '' : ' (nessuna materia situazionale nel pool attuale)'}</span></label>
+            <div class="sim-grid3" id="sim-sit-fields" style="${situOn ? '' : 'display:none'}">
+              <label class="sim-field"><span>Situaz. — esatta</span><input type="number" id="sim-ps-ok" value="${dSitOk}" step="0.05"></label>
+              <label class="sim-field"><span>Situaz. — sbagliata</span><input type="number" id="sim-ps-ko" value="${dSitKo}" step="0.05"></label>
+              <label class="sim-field"><span>Situaz. — non risposta</span><input type="number" id="sim-ps-na" value="${dSitNa}" step="0.05"></label>
+            </div>
+
+            <div class="sim-grid2">
+              <label class="sim-field"><span>Tempo a disposizione (minuti)</span><input type="number" id="sim-t-pre" value="${dTPre}" min="1"></label>
+              <label class="sim-field"><span>Totale quiz della prova</span><input type="number" id="sim-tot-quiz" value="${dTot}" min="1"></label>
+            </div>
+
+            <div class="sim-piano-note">
+              ℹ️ Le materie qui sotto dipendono dal <strong>piano di studio</strong> del save attivo. La selezione della Simulazione è indipendente da quella del Ranked.
+              <div class="sim-piano-note-actions">
+                <label class="sim-toggle sim-toggle-inline"><input type="checkbox" id="sim-ignora-piano" ${ignoraPiano ? 'checked' : ''}> <span>Usa tutte le materie della banca dati (ignora il piano)</span></label>
+                <button class="btn btn-ghost btn-sm" id="sim-vai-piano" type="button">⚙️ Modifica piano</button>
+              </div>
+            </div>
+
+            <div class="sim-calib-h">Quiz per materia <span class="sim-calib-rem" id="sim-rem-quiz"></span>
+              ${pesiBando ? `<button class="btn btn-ghost btn-sm" id="sim-auto-bando" type="button" title="Distribuisci il totale quiz tra le materie secondo le proporzioni del bando">⚖️ Auto dal bando</button>` : ''}
+            </div>
             <div class="scr-search-row sim-search-row">
               <span class="scr-search-ic">🔎</span>
               <input type="search" class="scr-search-big" id="sim-quiz-search" placeholder="Cerca una materia…">
             </div>
             <div class="sim-calib" id="sim-calib-quiz">
               ${quizIds.length ? quizIds.map(mid => {
-                const prefill = Math.min(quotePrefill[mid] || 0, quizMat[mid].items.length);
+                const prefill = prefillFor(mid);
                 return `
                 <div class="sim-calib-row" data-nome="${_esc(quizMat[mid].nome.toLowerCase())}">
-                  <span class="sim-calib-nome">${_esc(quizMat[mid].nome)}</span>
+                  <span class="sim-calib-nome">${_esc(quizMat[mid].nome)}${_isSituazionale(mid) ? ' <span class="sim-tag-sit">situaz.</span>' : ''}</span>
                   <span class="sim-calib-disp">disp. ${quizMat[mid].items.length}</span>
                   <input type="number" class="sim-calib-input" data-sim-qmat="${_esc(mid)}" data-max="${quizMat[mid].items.length}" value="${prefill}" min="0" max="${quizMat[mid].items.length}">
                 </div>`;
-              }).join('') : '<div class="sim-vuoto">Nessuna banca quiz disponibile (controlla il piano del save).</div>'}
+              }).join('') : '<div class="sim-vuoto">Nessuna banca quiz disponibile (controlla il piano del save o attiva "ignora il piano").</div>'}
             </div>
           </div>
 
@@ -166,8 +248,8 @@
             <div class="sim-card-h">3 · Prova scritta — quesiti e tempo</div>
             ${!haKey ? `<div class="dash-warn"><span>🔑 Per la valutazione IA serve la API key Gemini.</span><button class="btn btn-primary" id="sim-vai-key">Configura</button></div>` : ''}
             <div class="sim-grid2">
-              <label class="sim-field"><span>Numero quesiti</span><input type="number" id="sim-n-ques" value="3" min="1" max="10"></label>
-              <label class="sim-field"><span>Tempo a disposizione (minuti)</span><input type="number" id="sim-t-scr" value="180" min="1"></label>
+              <label class="sim-field"><span>Numero quesiti</span><input type="number" id="sim-n-ques" value="${dNQues}" min="1" max="10"></label>
+              <label class="sim-field"><span>Tempo a disposizione (minuti)</span><input type="number" id="sim-t-scr" value="${dTScr}" min="1"></label>
             </div>
             <div class="sim-calib-h">Materie da cui estrarre i quesiti</div>
             <div class="scr-search-row sim-search-row">
@@ -176,7 +258,7 @@
             </div>
             <div class="sim-chips" id="sim-ques-chips">
               ${quesIds.length ? quesIds.map(mid => `
-                <button class="sim-chip" data-sim-qsmat="${_esc(mid)}" data-nome="${_esc(quesMat[mid].nome.toLowerCase())}"><span class="sim-chip-tick">＋</span>${_esc(quesMat[mid].nome)} <span class="sim-chip-n">${quesMat[mid].items.length}</span></button>`).join('') : '<div class="sim-vuoto">Nessun quesito disponibile.</div>'}
+                <button class="sim-chip${preSelQues.has(mid) ? ' on' : ''}" data-sim-qsmat="${_esc(mid)}" data-nome="${_esc(quesMat[mid].nome.toLowerCase())}"><span class="sim-chip-tick">${preSelQues.has(mid) ? '✓' : '＋'}</span>${_esc(quesMat[mid].nome)} <span class="sim-chip-n">${quesMat[mid].items.length}</span></button>`).join('') : '<div class="sim-vuoto">Nessun quesito disponibile.</div>'}
             </div>
           </div>
 
@@ -186,11 +268,11 @@
         </div>
       `;
 
-      _wireConfig(quizMat, quesMat);
+      _wireConfig(quizMat, quesMat, preSelQues);
     }
 
-    function _wireConfig(quizMat, quesMat) {
-      const selQuesMaterie = new Set();
+    function _wireConfig(quizMat, quesMat, preSelQues) {
+      const selQuesMaterie = new Set(preSelQues || []);
 
       const incPre = document.getElementById('sim-inc-pre');
       const incScr = document.getElementById('sim-inc-scr');
@@ -207,10 +289,55 @@
       const bKey = document.getElementById('sim-vai-key');
       if (bKey) bKey.addEventListener('click', () => mostraModaleSettings());
 
+      // ── Punteggi situazionali: mostra/nascondi i campi ──
+      const sitOn = document.getElementById('sim-sit-on');
+      const sitFields = document.getElementById('sim-sit-fields');
+      if (sitOn && sitFields) sitOn.addEventListener('change', () => {
+        sitFields.style.display = sitOn.checked ? '' : 'none';
+      });
+
+      // ── "Ignora piano": ricarica la lista materie (piena vs piano) ──
+      const ignoraEl = document.getElementById('sim-ignora-piano');
+      if (ignoraEl) ignoraEl.addEventListener('change', () => {
+        // Persisto subito il toggle e riapro la schermata con il nuovo pool.
+        const cfg = _loadConfigSalvata();
+        cfg.ignoraPiano = ignoraEl.checked;
+        _saveConfigSalvata(cfg);
+        renderSimulazione();
+      });
+
+      // ── "Modifica piano": apre la gestione Piani & Partite ──
+      const vaiPiano = document.getElementById('sim-vai-piano');
+      if (vaiPiano) vaiPiano.addEventListener('click', () => {
+        // window.navigaA è la versione PATCHATA da saves-ui che gestisce 'piani'
+        // (il `navigaA` di nav.js non conosce quella pagina).
+        const nav = window.navigaA || (typeof navigaA === 'function' ? navigaA : null);
+        if (nav) nav('piani');
+      });
+
       // ── Calibratore quiz ──
       const totEl = document.getElementById('sim-tot-quiz');
       const remEl = document.getElementById('sim-rem-quiz');
       const inputs = Array.from(document.querySelectorAll('[data-sim-qmat]'));
+
+      // ── "Auto dal bando": distribuisce il totale quiz per proporzioni ──
+      const autoBando = document.getElementById('sim-auto-bando');
+      if (autoBando) autoBando.addEventListener('click', () => {
+        const pesi = _pesiBandoAttivo();
+        if (!pesi) { toast('Il bando del save non definisce proporzioni per materia', true); return; }
+        const totale = Math.max(1, parseInt(totEl.value, 10) || 30);
+        // Ripartisco solo tra le materie effettivamente presenti nel pool.
+        const pesiValidi = {};
+        inputs.forEach(i => { const mid = i.dataset.simQmat; if (pesi[mid] != null) pesiValidi[mid] = pesi[mid]; });
+        const quote = ripartisciProporzionale(totale, pesiValidi);
+        inputs.forEach(i => {
+          const mid = i.dataset.simQmat;
+          const q = Math.min(quote[mid] || 0, parseInt(i.dataset.max, 10) || 0);
+          i.value = q;
+        });
+        aggiornaCalib(null);
+        toast('Composizione automatica applicata dal bando ✓');
+      });
       function sommaQuiz() { return inputs.reduce((s, i) => s + (parseInt(i.value, 10) || 0), 0); }
       function aggiornaCalib(changed) {
         const totale = Math.max(0, parseInt(totEl.value, 10) || 0);
@@ -281,7 +408,15 @@
           s: parseFloat(document.getElementById('sim-p-ko').value) || 0,
           n: parseFloat(document.getElementById('sim-p-na').value) || 0,
         };
+        // Punteggi differenziati per i quiz situazionali (opzionale).
+        const situazionaliOn = !!(sitOn && sitOn.checked);
+        const puntiSit = situazionaliOn ? {
+          e: parseFloat(document.getElementById('sim-ps-ok').value) || 0,
+          s: parseFloat(document.getElementById('sim-ps-ko').value) || 0,
+          n: parseFloat(document.getElementById('sim-ps-na').value) || 0,
+        } : null;
         const tempoPre = Math.max(1, parseInt(document.getElementById('sim-t-pre').value, 10) || 60);
+        const ignoraPianoNow = !!(ignoraEl && ignoraEl.checked);
 
         // Config scritto
         let nQuesiti = 0, materieScritto = [], tempoScritto = 0;
@@ -295,13 +430,24 @@
           if (dispo < nQuesiti) { toast(`Solo ${dispo} quesiti disponibili nelle materie scelte`, true); return; }
         }
 
+        const totQuiz = Math.max(1, parseInt(totEl.value, 10) || 30);
+
         SIM = {
-          config: { includePre, includeScritto, materiePre, nQuiz, punti, tempoPre, materieScritto, nQuesiti, tempoScritto },
+          config: { includePre, includeScritto, materiePre, nQuiz, punti, puntiSit, situazionaliOn, tempoPre, ignoraPiano: ignoraPianoNow, materieScritto, nQuesiti, tempoScritto },
           fase: includePre ? 'preselettiva' : 'scritto',
           startedAt: new Date().toISOString(),
           pre: null,
           scritto: null,
         };
+        // Ricorda le impostazioni per la prossima simulazione (task 5).
+        _saveConfigSalvata({
+          includePre, includeScritto,
+          totQuiz, tempoPre, punti,
+          situazionaliOn, puntiSit,
+          ignoraPiano: ignoraPianoNow,
+          materiePre,
+          nQuesiti, tempoScritto, materieScritto,
+        });
         _saveCorrente();
         if (includePre) _avviaPreselettiva();
         else _preparaScritto();
@@ -349,7 +495,7 @@
     // ═══════════════════════════════════════════════════════
     function _avviaPreselettiva() {
       const c = SIM.config;
-      const quizMat = _quizPerMateria();
+      const quizMat = _quizPerMateria(c.ignoraPiano);
       const scelti = [];
       for (const mid in c.materiePre) {
         const items = (quizMat[mid] ? quizMat[mid].items.slice() : []);
@@ -395,8 +541,18 @@
       const esatte = sess.quiz.filter(q => q._corretta === true).length;
       const sbagliate = sess.quiz.filter(q => q._corretta === false).length;
       const nonRisp = sess.quiz.filter(q => q._risposta_data === null || q._risposta_data === 'SKIP').length;
-      const raw = esatte * c.punti.e + sbagliate * c.punti.s + nonRisp * c.punti.n;
-      const max = sess.quiz.length * c.punti.e;
+
+      // Punteggio: per materia (situazionali diversi dagli ordinari) se attivo.
+      const puntiPer = (q) => (c.situazionaliOn && c.puntiSit && _isSituazionale(q._materia_id || q.materia))
+                                ? c.puntiSit : c.punti;
+      let raw = 0, max = 0;
+      for (const q of sess.quiz) {
+        const p = puntiPer(q);
+        max += p.e;   // punteggio massimo = tutte esatte, con la scala della materia
+        if (q._corretta === true) raw += p.e;
+        else if (q._corretta === false) raw += p.s;
+        else raw += p.n;   // non risposta / SKIP
+      }
       let voto = max > 0 ? (raw / max) * 30 : 0;
       voto = Math.max(0, Math.min(30, voto));
       const dettaglio = sess.quiz.map(q => ({

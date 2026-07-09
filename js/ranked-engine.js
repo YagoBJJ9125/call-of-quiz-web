@@ -30,13 +30,23 @@
 
   // — Costruisci pool indicizzato per il selettore —
   // Restituisce { all, perMateria, perId } usabili dal selezionatore
-  function rankedCostruisciPool() {
+  function rankedCostruisciPool(opts) {
+    opts = opts || {};
     if (!STATE.pacchetto) return null;
     const visti = new Set();
     const all = [];
     // Fase 5 + 7: filtra materie + argomenti esclusi del piano del save attivo.
-    const filtro = (window.SavesCore && SavesCore.getFiltroPianoAttivo)
+    // opts.ignoraPiano === true → nessun filtro (usato dalla Simulazione, che
+    // ha una selezione di materie indipendente dal piano del Ranked).
+    const filtro = (!opts.ignoraPiano && window.SavesCore && SavesCore.getFiltroPianoAttivo)
                     ? SavesCore.getFiltroPianoAttivo() : null;
+    // Indice id → posizione in `all`: gestisce le COLLISIONI di quizId
+    // (molti quiz di logica condividono la stessa domanda, es. "Indicare il
+    // valore della seguente operazione." → 86 quiz con lo stesso id). Senza
+    // gestione il primo incontrato vince; se quello è la versione VECCHIA
+    // senza immagini, la figura non compare mai. Preferiamo sempre la
+    // versione CON immagini a parità di id.
+    const posById = new Map();
     for (const m of STATE.pacchetto.manifest.moduli) {
       if (filtro && filtro.materieAmmesse && !filtro.materieAmmesse.has(m.materia_id)) continue;
       const banca = STATE.pacchetto.banche[m.materia_id];
@@ -44,12 +54,23 @@
       const arr = banca.categorizzati || banca.quiz || [];
       for (const q of arr) {
         const id = quizId(q);
-        if (visti.has(id)) continue;
-        visti.add(id);
         const argId = q.categorizzazione && q.categorizzazione.argomento_id;
         if (filtro && !filtro.quizPassa(m.materia_id, argId)) continue;
         // Escludi quiz che richiedono immagini non disponibili nell'app
         if (typeof quizRichiedeImmagine === 'function' && quizRichiedeImmagine(q)) continue;
+        const haImg = Array.isArray(q.immagini) && q.immagini.length > 0;
+        if (visti.has(id)) {
+          // Collisione: sostituisci solo se il nuovo ha immagini e il tenuto no.
+          const pos = posById.get(id);
+          if (pos != null && haImg) {
+            const tenuto = all[pos].quiz;
+            const tenutoHaImg = Array.isArray(tenuto.immagini) && tenuto.immagini.length > 0;
+            if (!tenutoHaImg) all[pos] = { quiz: { ...q, _materia_id: m.materia_id }, id, materiaId: m.materia_id };
+          }
+          continue;
+        }
+        visti.add(id);
+        posById.set(id, all.length);
         all.push({
           quiz: { ...q, _materia_id: m.materia_id },
           id,
