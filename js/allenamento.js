@@ -58,7 +58,7 @@
     modalita:        'esercitazione',  // 'esercitazione' | 'esame'
     timerMode:       'off',
     timerMinuti:     30,
-    ordine:          'casuale',   // 'casuale' | 'peso' | 'materia'
+    ordine:          'bando',     // default: percentuali del piano; fallback casuale senza save
     // legacy (mantenuto per compat con riferimenti esterni)
     materieSelezionate: new Set(),
     argomentiEspansi:   new Set(),
@@ -190,7 +190,7 @@
             <div class="pill ${CONFIG.ordine === 'peso'    ? 'active' : ''}" onclick="setOrdine('peso')">Per peso</div>
             <div class="pill ${CONFIG.ordine === 'materia' ? 'active' : ''}" onclick="setOrdine('materia')">Per materia</div>
             ${(typeof carComposizioneBando === 'function' && carComposizioneBando()) ? `
-              <div class="pill ${CONFIG.ordine === 'bando' ? 'active' : ''}" onclick="setOrdine('bando')" title="Rispetta le proporzioni per materia del bando del save attivo">📦 Bando</div>
+              <div class="pill ${CONFIG.ordine === 'bando' ? 'active' : ''}" onclick="setOrdine('bando')" title="Rispetta le percentuali per materia definite in Modifica piano">⚖ Pesi piano</div>
             ` : ''}
           </div>
         </div>

@@ -355,6 +355,15 @@
     gap: 10px;
   }
 
+  .quiz-keyboard-hint {
+    margin: -14px 0 10px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    text-align: right;
+  }
+
   .quiz-option {
     display: flex;
     align-items: flex-start;
@@ -375,11 +384,12 @@
   }
 
   .quiz-option .opt-letter {
-    width: 26px;
-    height: 26px;
+    width: 30px;
+    height: 30px;
     border: 1px solid var(--border-medium);
     border-radius: 50%;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     font-family: var(--font-mono);
@@ -387,6 +397,14 @@
     font-weight: 600;
     color: var(--text-secondary);
     flex-shrink: 0;
+    line-height: 1;
+  }
+
+  .quiz-option .opt-letter small {
+    margin-top: 2px;
+    font-size: 8px;
+    font-weight: 500;
+    opacity: 0.75;
   }
 
   .quiz-option .opt-text {

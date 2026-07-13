@@ -182,6 +182,10 @@
   // bandi_catalogo.json) > peso globale di programma_studio.json > 5.
   function carPesoMateria(materiaId) {
     const save = (typeof SavesCore !== 'undefined') ? SavesCore.getSaveAttivo() : null;
+    const composizione = save && save.piano && save.piano.composizione;
+    if (composizione && Object.prototype.hasOwnProperty.call(composizione, materiaId)) {
+      return Number(composizione[materiaId]) || 0;
+    }
     const override = save && save.piano && save.piano.pesiOverride && save.piano.pesiOverride[materiaId];
     if (typeof override === 'number') return override;
     if (!STATE.pacchetto || !STATE.pacchetto.programma) return 5;

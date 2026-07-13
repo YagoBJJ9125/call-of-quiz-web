@@ -64,6 +64,7 @@
               `).join('')}
             </div>
           ` : ''}
+          <div class="quiz-keyboard-hint">Tastiera: A-D oppure 1-4</div>
           <div class="quiz-options">
             ${q._opzioni_mescolate.map((opt, idx) => {
               const letter = String.fromCharCode(65 + idx);
@@ -87,8 +88,8 @@
               // Con l'indice numerico nessun escape è necessario: il listener
               // recupera il testo da SESSIONE.quiz[i]._opzioni_mescolate.
               return `
-                <div class="${cls}" data-quiz-opt-idx="${idx}">
-                  <div class="opt-letter">${letter}</div>
+                <div class="${cls}" data-quiz-opt-idx="${idx}" title="Rispondi con ${letter} o ${idx + 1}">
+                  <div class="opt-letter">${letter}<small>${idx + 1}</small></div>
                   <div class="opt-text">${escapeHTML(opt)}</div>
                 </div>
               `;
@@ -665,13 +666,15 @@
   }
 
   // ═══════ Navigazione da tastiera (← / →) ═══════
-  // Frecce sinistra/destra: quiz precedente/successivo. Rispecchia ESATTAMENTE
-  // i pulsanti freccia liberi (data-quiz-nav) renderizzati nella card: stessi
-  // limiti (no wrap), nessun vincolo di risposta. Registrato una sola volta.
+  // Frecce sinistra/destra: quiz precedente/successivo. A-D e 1-4 (compreso
+  // il tastierino numerico) selezionano l'opzione mostrata nella stessa posizione.
   document.addEventListener('keydown', (e) => {
-    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    const key = String(e.key || '').toUpperCase();
+    const rispostaIdx = ({ A: 0, '1': 0, B: 1, '2': 1, C: 2, '3': 2, D: 3, '4': 3 })[key];
+    const isFreccia = e.key === 'ArrowLeft' || e.key === 'ArrowRight';
+    if (!isFreccia && rispostaIdx === undefined) return;
     // Niente scorciatoie del browser (es. Alt+← = indietro): lascia stare.
-    if (e.ctrlKey || e.altKey || e.metaKey) return;
+    if (e.ctrlKey || e.altKey || e.metaKey || e.repeat) return;
     // Solo quando una batteria è effettivamente a schermo.
     if (!SESSIONE || !SESSIONE.quiz || !document.querySelector('.quiz-session')) return;
     // Non rubare le frecce a chi sta scrivendo (tutor IA, ricerca, ecc.).
@@ -682,7 +685,15 @@
     if (modal && modal.classList.contains('active')) return;
     if (document.getElementById('studioOverlay')) return;
 
-    if (e.key === 'ArrowLeft' && SESSIONE.iCorrente > 0) {
+    if (rispostaIdx !== undefined) {
+      const q = SESSIONE.quiz[SESSIONE.iCorrente];
+      if (!q || !Array.isArray(q._opzioni_mescolate)) return;
+      if (q._risposta_data !== null && q._risposta_data !== 'SKIP') return;
+      const risposta = q._opzioni_mescolate[rispostaIdx];
+      if (risposta == null) return;
+      e.preventDefault();
+      rispondiQuiz(risposta);
+    } else if (e.key === 'ArrowLeft' && SESSIONE.iCorrente > 0) {
       e.preventDefault();
       vaiAQuiz(SESSIONE.iCorrente - 1);
     } else if (e.key === 'ArrowRight' && SESSIONE.iCorrente < SESSIONE.quiz.length - 1) {

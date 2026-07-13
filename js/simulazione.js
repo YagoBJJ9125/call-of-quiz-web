@@ -47,6 +47,12 @@
     // Percentuali per materia dichiarate dal bando: preferisce `composizione`
     // (percentuali esatte), altrimenti `pesiOverride` (pesi relativi). → {mid:peso}
     function _pesiBandoAttivo() {
+      const sv = (typeof SavesCore !== 'undefined') ? SavesCore.getSaveAttivo() : null;
+      const pianoSave = sv && sv.piano;
+      if (pianoSave) {
+        if (pianoSave.composizione && Object.keys(pianoSave.composizione).length) return pianoSave.composizione;
+        if (pianoSave.pesiOverride && Object.keys(pianoSave.pesiOverride).length) return pianoSave.pesiOverride;
+      }
       const b = _bandoAttivo();
       const piano = b && b.piano;
       if (!piano) return null;

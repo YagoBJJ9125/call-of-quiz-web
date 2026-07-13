@@ -52,7 +52,7 @@
   const SCR_MACRO = [
     { id: 'g_amm',        nome: 'Diritto Amministrativo',             materie: ['M01_legge_241', 'M14_dpr_445', 'M23_redazione_atti', 'M27_urp_comunicazione'] },
     { id: 'g_trasp',      nome: 'Trasparenza e Anticorruzione',        materie: ['M04_anticorruzione', 'M05_trasparenza'] },
-    { id: 'g_impiego',    nome: 'Pubblico Impiego e Personale',        materie: ['M02_dlgs_165', 'M03_dpr_62', 'M12_performance', 'M25_gestione_personale', 'M19_competenze_trasversali'] },
+    { id: 'g_impiego',    nome: 'Pubblico Impiego e Personale',        materie: ['M02_dlgs_165', 'M03_dpr_62', 'M25_gestione_personale', 'M19_competenze_trasversali'] },
     { id: 'g_entiloc',    nome: 'Enti Locali',                         materie: ['M10_tuel', 'M26_figure_speciali_bilancio', 'M22_servizi_demografici'] },
     { id: 'g_contab',     nome: 'Contabilità e Tributi',               materie: ['M11_dlgs_118', 'M24_contabilita_tributaria_avanzata', 'M21_tributi_locali'] },
     { id: 'g_contratti',  nome: 'Contratti Pubblici',                  materie: ['M13_contratti_pubblici'] },

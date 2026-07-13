@@ -475,6 +475,62 @@
       // Le bozze (stato:'bozza', dal Pannello Bandi admin) restano invisibili agli
       // utenti finché non completate e pubblicate.
       const catalogoBandi = (STATE.pacchetto.bandi || []).filter(b => b.stato !== 'bozza');
+      let composizione = {}; // materia_id → percentuale effettiva nelle batterie
+
+      function _normalizzaComposizione(sorgente, idsInput) {
+        const ids = idsInput || [...sel];
+        if (ids.length === 0) return {};
+        const valori = {};
+        let totale = 0;
+        ids.forEach(id => {
+          const v = Math.max(0, Number(sorgente && sorgente[id]) || 0);
+          valori[id] = v;
+          totale += v;
+        });
+        if (totale <= 0) {
+          ids.forEach(id => { valori[id] = 1; });
+          totale = ids.length;
+        }
+        const out = {};
+        ids.forEach(id => { out[id] = valori[id] * 100 / totale; });
+        return out;
+      }
+
+      function _pesiGlobali(idsInput) {
+        const out = {};
+        (idsInput || [...sel]).forEach(id => { out[id] = Number(infoMateria[id] && infoMateria[id].peso) || 1; });
+        return out;
+      }
+
+      function _sorgentePreset(bando, idsInput) {
+        const piano = bando && bando.piano;
+        return (piano && piano.composizione && Object.keys(piano.composizione).length)
+          ? piano.composizione
+          : (piano && piano.pesiOverride && Object.keys(piano.pesiOverride).length)
+            ? piano.pesiOverride
+            : _pesiGlobali(idsInput);
+      }
+
+      function _impostaPercentuale(mid, valore) {
+        const ids = [...sel];
+        if (!ids.includes(mid)) return;
+        if (ids.length === 1) { composizione = { [mid]: 100 }; return; }
+        const desiderata = Math.max(0, Math.min(100, Number(valore) || 0));
+        const altri = ids.filter(id => id !== mid);
+        const residuo = 100 - desiderata;
+        const totaleAltri = altri.reduce((s, id) => s + Math.max(0, Number(composizione[id]) || 0), 0);
+        const nuova = { [mid]: desiderata };
+        altri.forEach(id => {
+          nuova[id] = totaleAltri > 0 ? residuo * Math.max(0, Number(composizione[id]) || 0) / totaleAltri
+                                      : residuo / altri.length;
+        });
+        composizione = nuova;
+      }
+
+      function _nomeMateria(mid) {
+        return (infoMateria[mid] && infoMateria[mid].nome) ||
+               ((moduli.find(m => m.materia_id === mid) || {}).nome) || mid;
+      }
 
       // Precompila in base alla modalità
       let saveEsistente = null;
@@ -500,6 +556,14 @@
         for (const m of moduli) sel.add(m.materia_id);
       }
 
+      const bandoIniziale = bandoIdSelezionato ? catalogoBandi.find(b => b.id === bandoIdSelezionato) : null;
+      const compSalvata = saveEsistente && saveEsistente.piano && saveEsistente.piano.composizione;
+      const sorgenteIniziale = (compSalvata && Object.keys(compSalvata).length) ? compSalvata
+                             : (pesiOverride && Object.keys(pesiOverride).length) ? pesiOverride
+                             : bandoIniziale ? _sorgentePreset(bandoIniziale, [...sel])
+                             : _pesiGlobali([...sel]);
+      composizione = _normalizzaComposizione(sorgenteIniziale, [...sel]);
+
       // Due viste selezionabili in ogni momento (tab), sia in creazione che in
       // modifica: 'bando' = scegli un preset da bandi_catalogo.json, 'materie'
       // = griglia manuale materia/argomento (quella storica). Le tab compaiono
@@ -518,6 +582,7 @@
           if (Array.isArray(escl[mid])) argEsclusi[mid] = new Set(escl[mid]);
         });
         pesiOverride = Object.assign({}, (bando.piano && bando.piano.pesiOverride) || {});
+        composizione = _normalizzaComposizione(_sorgentePreset(bando, [...sel]), [...sel]);
         bandoIdSelezionato = bando.id;
         if (!editing) nomeScelto = bando.nome || '';
         vista = 'materie';
@@ -645,6 +710,43 @@
       }
 
       // ── Vista "Piano Bandi": scelta di un preset da bandi_catalogo.json ──
+      function _renderRiepilogoPesiBando(b) {
+        const ids = (b.piano && b.piano.materieIds) || [];
+        const percentuali = _normalizzaComposizione(_sorgentePreset(b, ids), ids);
+        return `<div class="wiz-bando-pesi">${ids.map(mid =>
+          `<span><strong>${_esc(_nomeMateria(mid))}</strong> ${percentuali[mid].toFixed(1)}%</span>`
+        ).join('')}</div>`;
+      }
+
+      function _renderComposizione() {
+        const ids = moduli.map(m => m.materia_id).filter(id => sel.has(id));
+        const percentuali = _normalizzaComposizione(composizione, ids);
+        const quote40 = (typeof ripartisciProporzionale === 'function')
+          ? ripartisciProporzionale(40, percentuali) : {};
+        return `
+          <div class="wiz-section wiz-weight-section">
+            <div class="wiz-section-h">
+              <label class="wiz-label">Percentuale delle materie nelle batterie</label>
+              <div class="wiz-quick">
+                <button class="btn btn-ghost btn-sm" id="wizPesiPreset">Ripristina pesi</button>
+                <button class="btn btn-ghost btn-sm" id="wizPesiUguali">Dividi in parti uguali</button>
+              </div>
+            </div>
+            <div class="wiz-hint">Le percentuali sommano sempre al 100%. Quando ne modifichi una, il resto viene redistribuito proporzionalmente. La stima a destra mostra la composizione di una batteria da 40 quiz.</div>
+            <div class="wiz-weight-list">
+              ${ids.map(mid => {
+                const pct = percentuali[mid] || 0;
+                return `<label class="wiz-weight-row">
+                  <span class="wiz-weight-name">${_esc(_nomeMateria(mid))}</span>
+                  <span class="wiz-weight-bar"><i style="width:${Math.max(0, Math.min(100, pct))}%"></i></span>
+                  <span class="wiz-weight-input"><input type="number" data-wiz-peso="${_esc(mid)}" value="${pct.toFixed(1)}" min="0" max="100" step="0.1">%</span>
+                  <span class="wiz-weight-preview">${quote40[mid] || 0} / 40 quiz</span>
+                </label>`;
+              }).join('')}
+            </div>
+          </div>`;
+      }
+
       function _renderSchermataBando() {
         main.innerHTML = `
           <div class="page-header">
@@ -660,6 +762,7 @@
                   <div class="wiz-bando-nome">${_esc(b.nome)}</div>
                   ${b.ente ? `<div class="wiz-bando-ente">${_esc(b.ente)}</div>` : ''}
                   ${b.descrizione ? `<div class="wiz-bando-descr">${_esc(b.descrizione)}</div>` : ''}
+                  ${_renderRiepilogoPesiBando(b)}
                   <div class="wiz-bando-meta">${n} materie${b.scadenza ? ' · scadenza ' + _esc(b.scadenza) : ''}</div>
                 </button>
               `;
@@ -729,6 +832,8 @@
             <div class="wiz-rows wiz-rows-hier">${righe}</div>
           </div>
 
+          ${_renderComposizione()}
+
           ${editing ? '' : `
             <div class="wiz-rank-suggest" id="wizRankBox">
               <div class="wiz-rank-h">🎯 Rank iniziale suggerito</div>
@@ -749,7 +854,15 @@
         document.querySelectorAll('input[data-mat]').forEach(cb => {
           cb.addEventListener('change', () => {
             const id = cb.dataset.mat;
-            if (cb.checked) sel.add(id); else { sel.delete(id); espansi.delete(id); }
+            if (cb.checked) {
+              sel.add(id);
+              composizione[id] = Number(infoMateria[id] && infoMateria[id].peso) || 1;
+            } else {
+              sel.delete(id);
+              espansi.delete(id);
+              delete composizione[id];
+            }
+            composizione = _normalizzaComposizione(composizione, [...sel]);
             render();
           });
         });
@@ -777,11 +890,15 @@
           });
         });
         document.getElementById('wizPickAll').addEventListener('click', () => {
-          for (const m of moduli) sel.add(m.materia_id);
+          for (const m of moduli) {
+            sel.add(m.materia_id);
+            if (composizione[m.materia_id] == null) composizione[m.materia_id] = Number(infoMateria[m.materia_id] && infoMateria[m.materia_id].peso) || 1;
+          }
+          composizione = _normalizzaComposizione(composizione, [...sel]);
           render();
         });
         document.getElementById('wizPickNone').addEventListener('click', () => {
-          sel.clear(); espansi.clear();
+          sel.clear(); espansi.clear(); composizione = {};
           render();
         });
         document.getElementById('wizArgAll').addEventListener('click', () => {
@@ -797,6 +914,24 @@
         _attachTabListeners();
         const bRiapplica = document.getElementById('wizRiapplicaBando');
         if (bRiapplica) bRiapplica.addEventListener('click', () => _applicaBando(bandoRiapplicabile));
+        document.querySelectorAll('[data-wiz-peso]').forEach(input => {
+          input.addEventListener('change', () => {
+            _impostaPercentuale(input.dataset.wizPeso, input.value);
+            render();
+          });
+        });
+        const bPesiPreset = document.getElementById('wizPesiPreset');
+        if (bPesiPreset) bPesiPreset.addEventListener('click', () => {
+          const bando = bandoIdSelezionato ? catalogoBandi.find(b => b.id === bandoIdSelezionato) : null;
+          composizione = _normalizzaComposizione(bando ? _sorgentePreset(bando, [...sel]) : _pesiGlobali([...sel]), [...sel]);
+          render();
+        });
+        const bPesiUguali = document.getElementById('wizPesiUguali');
+        if (bPesiUguali) bPesiUguali.addEventListener('click', () => {
+          const uguali = {}; [...sel].forEach(id => { uguali[id] = 1; });
+          composizione = _normalizzaComposizione(uguali, [...sel]);
+          render();
+        });
         _aggiornaWizCount();
       }
 
@@ -844,6 +979,9 @@
         }
         if (Object.keys(esclSerial).length > 0) pianoOut.argomentiEsclusi = esclSerial;
         if (pesiOverride && Object.keys(pesiOverride).length > 0) pianoOut.pesiOverride = pesiOverride;
+        const compNormalizzata = _normalizzaComposizione(composizione, [...sel]);
+        pianoOut.composizione = {};
+        [...sel].forEach(mid => { pianoOut.composizione[mid] = Number((compNormalizzata[mid] || 0).toFixed(4)); });
 
         if (editing) {
           // ── Modalità modifica: aggiorna piano del save esistente ──

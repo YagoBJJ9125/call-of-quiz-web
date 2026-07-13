@@ -8,7 +8,7 @@
   // ═══════════════════════════════════════════════════════
   window.CM_QUESITI = {
   "versione": 2,
-  "generato": "2026-06-01",
+  "generato": "2026-07-13",
   "quesiti": [
     {
       "n": 1,
@@ -4849,87 +4849,6 @@
       "fonti": [
         "D.Lgs. 118/2011 All. 4/2 punto 9; art. 3 co. 16",
         "D.Lgs. 267/2000 artt. 186-187"
-      ]
-    },
-    {
-      "n": 182,
-      "id": "q_performance_ciclo_01",
-      "materia_id": "M12_performance",
-      "argomento_id": "A61_ciclo_performance",
-      "materia": "D.Lgs. 150/2009 — Performance e PIAO",
-      "normativa": "D.Lgs. 150/2009 (agg. D.Lgs. 74/2017); DPR 81/2022 (PIAO)",
-      "tipo": "scritto",
-      "difficolta": 1,
-      "domanda": "Il candidato illustri il ciclo della performance nelle pubbliche amministrazioni ai sensi del D.Lgs. 150/2009, descrivendo i documenti principali, i soggetti coinvolti e la sua articolazione temporale.",
-      "rispostaPerfetta": "Il ciclo della performance è il sistema di programmazione, misurazione e valutazione dei risultati delle pubbliche amministrazioni, introdotto dal D.Lgs. 150/2009 (c.d. riforma Brunetta) e successivamente aggiornato dal D.Lgs. 74/2017 (riforma Madia). Il ciclo si articola in tre fasi: programmazione, misurazione e valutazione.\n\nLa fase di programmazione si concretizza nel Piano della Performance, documento triennale che ogni PA deve adottare entro il 31 gennaio dell'anno di riferimento. Il Piano individua gli obiettivi strategici e operativi dell'ente, gli indicatori per misurarne il raggiungimento, i valori attesi di risultato e le risorse assegnate. Gli obiettivi devono essere specifici, misurabili, rilevanti, raggiungibili e temporalmente definiti (criteri SMART). Con il DPR 81/2022, le PA con più di cinquanta dipendenti assorbono il Piano della Performance nel Piano Integrato di Attività e Organizzazione (PIAO), che unifica in un unico documento il piano della performance, il piano anticorruzione, il piano della formazione, il piano della parità di genere e altri strumenti di programmazione organizzativa.\n\nLa fase di misurazione avviene nel corso dell'anno attraverso il monitoraggio periodico degli indicatori definiti nel Piano. Il dirigente responsabile verifica lo stato di avanzamento rispetto agli obiettivi assegnati e segnala eventuali scostamenti.\n\nLa fase di valutazione si conclude con la Relazione sulla Performance, documento annuale che illustra i risultati conseguiti rispetto agli obiettivi programmati, approvato entro il 30 giugno dell'anno successivo. La Relazione è validata dall'Organismo Indipendente di Valutazione (OIV), istituito in ogni amministrazione con funzioni di monitoraggio e valutazione della performance organizzativa e individuale. La valutazione individuale del personale dirigenziale e non dirigenziale determina l'attribuzione della retribuzione di risultato e delle progressioni economiche.\n\nPer il dipendente pubblico, il ciclo della performance si traduce in obiettivi annuali assegnati dal dirigente, la cui realizzazione è misurata attraverso indicatori definiti nel PEG/PIAO e determina la quota variabile della retribuzione.",
-      "puntiChiave": [
-        "Ciclo performance: programmazione → misurazione → valutazione (D.Lgs. 150/2009; D.Lgs. 74/2017)",
-        "Piano della Performance: triennale; entro 31 gennaio; obiettivi SMART",
-        "PIAO (DPR 81/2022): documento unificato per PA >50 dipendenti; assorbe il Piano della Performance",
-        "Monitoraggio periodico: verifica scostamenti in corso d'anno",
-        "Relazione sulla Performance: approvata entro 30 giugno; validata dall'OIV",
-        "OIV: monitoraggio e valutazione performance organizzativa e individuale",
-        "Valutazione individuale → retribuzione di risultato e progressioni economiche",
-        "Raccordo con PEG: obiettivi del ciclo della performance = obiettivi assegnati ai dirigenti nel PEG"
-      ],
-      "fonti": [
-        "D.Lgs. 150/2009",
-        "D.Lgs. 74/2017",
-        "DPR 81/2022 (PIAO)"
-      ]
-    },
-    {
-      "n": 183,
-      "id": "q_performance_ciclo_02",
-      "materia_id": "M12_performance",
-      "argomento_id": "A61_ciclo_performance",
-      "materia": "D.Lgs. 150/2009 — Performance e PIAO",
-      "normativa": "D.Lgs. 150/2009 artt. 7-14; D.Lgs. 74/2017",
-      "tipo": "scritto",
-      "difficolta": 2,
-      "domanda": "Il candidato esponga il ruolo e le funzioni dell'Organismo Indipendente di Valutazione (OIV) nel sistema della performance pubblica, con particolare riguardo alla sua composizione, alle attività di monitoraggio e al raccordo con la trasparenza.",
-      "rispostaPerfetta": "L'Organismo Indipendente di Valutazione (OIV) è previsto dall'art. 14 del D.Lgs. 150/2009 ed è l'organo interno alle amministrazioni pubbliche responsabile del monitoraggio del funzionamento complessivo del sistema della valutazione, della trasparenza e dell'integrità dei controlli interni.\n\nLa composizione dell'OIV varia in base alla dimensione dell'amministrazione: nelle PA di maggiori dimensioni è un collegio di tre membri (nominati dall'organo di indirizzo politico su indicazione del Dipartimento della Funzione Pubblica, da un albo nazionale); nelle PA più piccole e negli enti locali è ammessa la figura del componente unico. I membri dell'OIV devono possedere elevata professionalità ed esperienza in materia di organizzazione, gestione del cambiamento, valutazione della performance o management. La durata dell'incarico è di tre anni, non rinnovabili consecutivamente.\n\nLe funzioni dell'OIV comprendono: il monitoraggio del funzionamento complessivo del sistema di valutazione e della sua conformità alla normativa; la validazione della Relazione sulla Performance (atto essenziale per l'accesso agli incentivi economici); la proposta all'organo di indirizzo della valutazione annuale dei dirigenti apicali; la verifica della coerenza tra obiettivi del Piano della Performance e quelli del PEG/PIAO; il presidio della funzione di misurazione della performance organizzativa e individuale.\n\nL'OIV ha anche un ruolo centrale in materia di trasparenza: ai sensi dell'art. 43 del D.Lgs. 33/2013, il Responsabile della Trasparenza (che può coincidere con l'RPCT) ha il compito di promuovere il rispetto degli obblighi di pubblicazione, mentre l'OIV verifica la coerenza tra gli obiettivi di trasparenza previsti nel PIAO e i risultati effettivamente conseguiti. L'OIV attesta annualmente l'assolvimento degli obblighi di pubblicazione ai sensi del D.Lgs. 33/2013, condizione necessaria per l'erogazione degli incentivi di produttività al personale.\n\nPer il personale, l'OIV è il soggetto che valida la valutazione individuale dei dirigenti apicali e svolge funzioni di garanzia del sistema: un'amministrazione priva di OIV funzionante non può corrispondere i premi di produttività.",
-      "puntiChiave": [
-        "OIV (art. 14 D.Lgs. 150/2009): monitoraggio del sistema di valutazione, trasparenza e integrità",
-        "Composizione: collegio (3 membri) o componente unico; albo nazionale; durata 3 anni non rinnovabili",
-        "Funzioni: validazione Relazione Performance; proposta valutazione dirigenti apicali; monitoraggio PIAO",
-        "Validazione OIV: condizione necessaria per l'erogazione degli incentivi economici",
-        "Raccordo con trasparenza: attestazione assolvimento obblighi di pubblicazione (D.Lgs. 33/2013 art. 43)",
-        "Assenza di OIV funzionante → blocco dei premi di produttività",
-        "Verifica coerenza obiettivi Piano Performance / PEG / PIAO"
-      ],
-      "fonti": [
-        "D.Lgs. 150/2009 art. 14",
-        "D.Lgs. 74/2017",
-        "D.Lgs. 33/2013 art. 43",
-        "DPR 81/2022"
-      ]
-    },
-    {
-      "n": 184,
-      "id": "q_performance_ciclo_03",
-      "materia_id": "M12_performance",
-      "argomento_id": "A61_ciclo_performance",
-      "materia": "D.Lgs. 150/2009 — Performance e PIAO",
-      "normativa": "DPR 81/2022; D.Lgs. 150/2009; D.Lgs. 165/2001 artt. 45-48",
-      "tipo": "scritto",
-      "difficolta": 3,
-      "domanda": "Il candidato analizzi il Piano Integrato di Attività e Organizzazione (PIAO), illustrando la sua struttura, i contenuti obbligatori, il raccordo con i contratti collettivi e le implicazioni per la gestione del personale.",
-      "rispostaPerfetta": "Il Piano Integrato di Attività e Organizzazione (PIAO) è stato introdotto dall'art. 6 del D.L. 80/2021 (conv. L. 113/2021) e disciplinato nel dettaglio dal DPR 81/2022. Esso sostituisce una pluralità di documenti di programmazione che in precedenza le PA erano tenute ad adottare separatamente, con l'obiettivo di semplificare gli adempimenti e promuovere una visione integrata dell'organizzazione pubblica.\n\nSono tenute ad adottare il PIAO le PA con più di cinquanta dipendenti. Per gli enti di minori dimensioni è prevista una versione semplificata. Il PIAO ha durata triennale, è aggiornato annualmente e deve essere approvato entro il 31 gennaio di ciascun anno.\n\nLa struttura del PIAO, definita dall'Allegato al DPR 81/2022, si articola in cinque sezioni obbligatorie: la sezione «Scheda anagrafica» (dati identificativi dell'ente); la sezione «Valore pubblico, performance e anticorruzione» (che assorbe il Piano della Performance e il PTPCT — Piano Triennale di Prevenzione della Corruzione e della Trasparenza); la sezione «Organizzazione e capitale umano» (che include il piano dei fabbisogni di personale ex art. 6 D.Lgs. 165/2001, il piano della formazione, il piano della parità di genere e le azioni per il benessere organizzativo); la sezione «Monitoraggio» (con le modalità di verifica dell'attuazione); e la sezione «Allegati».\n\nIl raccordo con i contratti collettivi è rilevante sotto due profili. Sul fronte della valutazione individuale, i CCNL di comparto fissano le percentuali del personale che può accedere alle fasce di merito più elevate e le quote di salario accessorio ad esse collegate; il PIAO deve rispettare questi vincoli nella definizione dei sistemi di valutazione. Sul fronte del fabbisogno di personale, il PIAO recepisce le dotazioni organiche e i piani di assunzione, che devono essere compatibili con i vincoli finanziari del bilancio e con i limiti alle assunzioni fissati dalla legge.\n\nPer il dipendente, il PIAO è il documento che definisce il contesto organizzativo, gli obiettivi assegnati al suo ufficio, i criteri di valutazione della performance individuale e le opportunità di formazione e sviluppo professionale; è quindi il quadro di riferimento principale per comprendere le aspettative dell'ente nei confronti di ciascun lavoratore.",
-      "puntiChiave": [
-        "PIAO: D.L. 80/2021 + DPR 81/2022; PA >50 dipendenti; durata triennale; approvazione entro 31 gennaio",
-        "Sezioni: scheda anagrafica, valore pubblico/performance/anticorruzione, organizzazione/capitale umano, monitoraggio",
-        "Assorbe: Piano della Performance, PTPCT, piano fabbisogni, piano formazione, parità di genere",
-        "Raccordo CCNL: percentuali fasce di merito e quote salario accessorio fissate dal contratto",
-        "Piano fabbisogni di personale (art. 6 D.Lgs. 165/2001): integrato nel PIAO",
-        "Compatibilità con bilancio e limiti assunzionali di legge",
-        "Implicazione per il dipendente: PIAO = contesto organizzativo, obiettivi, criteri valutazione, formazione"
-      ],
-      "fonti": [
-        "DPR 81/2022",
-        "D.L. 80/2021 (conv. L. 113/2021)",
-        "D.Lgs. 150/2009",
-        "D.Lgs. 165/2001 art. 6"
       ]
     },
     {
@@ -10861,33 +10780,6 @@
       ],
       "fonti": [
         "D.Lgs. 118/2011 All. 1"
-      ]
-    },
-    {
-      "n": 420,
-      "id": "q_traccia_smn_valutazione_performance",
-      "materia_id": "M12_performance",
-      "argomento_id": "A61_ciclo_performance",
-      "materia": "D.Lgs. 150/2009 — Performance e Valutazione",
-      "normativa": "D.Lgs. 150/2009; DPR 81/2022 (PIAO)",
-      "tipo": "scritto",
-      "difficolta": 2,
-      "domanda": "La valutazione della performance.",
-      "rispostaPerfetta": "La valutazione della performance è il processo sistematico con cui le PA misurano i risultati conseguiti — a livello organizzativo e individuale — rispetto agli obiettivi programmati, al fine di garantire l'efficienza e la qualità dei servizi, promuovere la responsabilizzazione dei dirigenti e del personale e collegare i risultati all'erogazione del trattamento economico accessorio. La disciplina è contenuta nel D.Lgs. 27 ottobre 2009, n. 150 (riforma Brunetta), modificato dal D.Lgs. 74/2017 (riforma Madia), e ora integrata nel PIAO (DPR 81/2022).\n\nIl ciclo della performance si articola in: pianificazione (definizione degli obiettivi e degli indicatori nel Piano della Performance/PIAO); monitoraggio in corso d'anno (verifica periodica dell'andamento rispetto agli obiettivi); misurazione a fine anno (calcolo degli indicatori di risultato); valutazione (attribuzione del giudizio di performance individuale da parte del dirigente responsabile); e validazione (verifica della correttezza metodologica da parte dell'OIV — Organismo Indipendente di Valutazione — e approvazione della Relazione sulla Performance).\n\nLa valutazione della performance individuale riguarda i dirigenti e il personale non dirigenziale. Per i dirigenti, la valutazione è effettuata dall'organo di indirizzo politico (Sindaco, Giunta) sulla base dei risultati dell'unità organizzativa diretta e del contributo individuale. Per il personale non dirigenziale, la valutazione è effettuata dal dirigente responsabile e si basa su obiettivi individuali assegnati nel PEG, comportamenti organizzativi e competenze. La valutazione determina l'accesso alle fasce di merito e la quota di salario accessorio (produttività) erogabile, nel rispetto dei limiti del Fondo Risorse Decentrate (art. 23 D.Lgs. 75/2017). La mancata differenziazione delle valutazioni — cioè l'attribuzione indiscriminata del punteggio massimo a tutto il personale — è una delle irregolarità più frequentemente censurate dalla Corte dei conti.",
-      "puntiChiave": [
-        "D.Lgs. 150/2009 (mod. D.Lgs. 74/2017) + PIAO (DPR 81/2022): disciplina della performance",
-        "Ciclo performance: pianificazione → monitoraggio → misurazione → valutazione → validazione OIV",
-        "OIV: verifica correttezza metodologica; approva Relazione sulla Performance",
-        "Valutazione dirigenti: organo di indirizzo politico; basata su risultati dell'unità organizzativa",
-        "Valutazione personale non dirigenziale: dal dirigente responsabile; obiettivi PEG + comportamenti organizzativi",
-        "Collegamento con salario accessorio: fasce di merito → quota del Fondo Risorse Decentrate (art. 23 D.Lgs. 75/2017)",
-        "Irregolarità frequente: valutazione indiscriminata al massimo → censura Corte dei conti"
-      ],
-      "fonti": [
-        "D.Lgs. 150/2009",
-        "D.Lgs. 74/2017",
-        "D.Lgs. 75/2017 art. 23",
-        "DPR 81/2022 (PIAO)"
       ]
     },
     {

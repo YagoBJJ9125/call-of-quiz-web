@@ -12,15 +12,51 @@
   // tutte le funzioni ritornano null/il pool invariato in quel caso.
   // ═══════════════════════════════════════════════════════
 
-  // — Composizione del bando del save attivo (o null) —
+  function normalizzaPercentuali(valori, ids) {
+    const lista = (ids || Object.keys(valori || {})).filter(id => valori && Number(valori[id]) > 0);
+    const totale = lista.reduce((somma, id) => somma + Number(valori[id] || 0), 0);
+    if (lista.length === 0 || totale <= 0) return null;
+    const out = {};
+    lista.forEach(id => { out[id] = Number(valori[id]) * 100 / totale; });
+    return out;
+  }
+
+  // — Composizione del piano del save attivo (o null) —
+  // Priorità: percentuali personalizzate del save > pesi del save > preset
+  // bando > pesi globali del programma. In questo modo anche i vecchi save e
+  // i piani manuali ottengono subito una composizione coerente, senza migrare
+  // o perdere le impostazioni già salvate.
   function carComposizioneBando() {
     if (typeof SavesCore === 'undefined') return null;
     const save = SavesCore.getSaveAttivo();
-    const bandoId = save && save.bandoId;
-    if (!bandoId || !STATE.pacchetto || !Array.isArray(STATE.pacchetto.bandi)) return null;
-    const bando = STATE.pacchetto.bandi.find(b => b.id === bandoId);
-    const comp = bando && bando.piano && bando.piano.composizione;
-    return (comp && Object.keys(comp).length > 0) ? comp : null;
+    const piano = save && save.piano;
+    const ids = piano && Array.isArray(piano.materieIds) ? piano.materieIds : [];
+    if (!save || ids.length === 0 || !STATE.pacchetto) return null;
+
+    let sorgente = null;
+    if (piano.composizione && Object.keys(piano.composizione).length > 0) {
+      sorgente = piano.composizione;
+    } else if (piano.pesiOverride && Object.keys(piano.pesiOverride).length > 0) {
+      sorgente = piano.pesiOverride;
+    }
+
+    if (!sorgente && save.bandoId && Array.isArray(STATE.pacchetto.bandi)) {
+      const bando = STATE.pacchetto.bandi.find(b => b.id === save.bandoId);
+      const bp = bando && bando.piano;
+      if (bp) sorgente = (bp.composizione && Object.keys(bp.composizione).length > 0)
+                          ? bp.composizione : bp.pesiOverride;
+    }
+
+    if (!sorgente) {
+      sorgente = {};
+      const materie = (STATE.pacchetto.programma && STATE.pacchetto.programma.materie) || [];
+      ids.forEach(id => {
+        const materia = materie.find(m => (m.id || m.materia_id) === id);
+        sorgente[id] = materia && Number(materia.peso) > 0 ? Number(materia.peso) : 1;
+      });
+    }
+
+    return normalizzaPercentuali(sorgente, ids);
   }
 
   // — Ripartizione "resto più grande" (Hamilton apportionment) —
@@ -67,7 +103,14 @@
       perMateria[mid].push(item);
     }
 
-    const quote = ripartisciProporzionale(n, percentuali);
+    // Se il pool è stato ristretto manualmente (es. due sole materie in
+    // Allenamento), rinormalizza le percentuali sulle sole materie presenti.
+    const percentualiPresenti = {};
+    Object.keys(perMateria).forEach(mid => {
+      if (Number(percentuali[mid]) > 0) percentualiPresenti[mid] = Number(percentuali[mid]);
+    });
+    if (Object.keys(percentualiPresenti).length === 0) return null;
+    const quote = ripartisciProporzionale(n, percentualiPresenti);
     const scelti = [];
     const avanzo = [];
     let deficit = 0;
@@ -94,5 +137,6 @@
   }
 
   window.carComposizioneBando     = carComposizioneBando;
+  window.normalizzaPercentuali    = normalizzaPercentuali;
   window.ripartisciProporzionale  = ripartisciProporzionale;
   window.pescaProporzionale       = pescaProporzionale;

@@ -13,7 +13,7 @@
   window.CM_QUESITI_PIANO = {
     "bando": "Piano unificato: RIPAM Difesa 1100 (R1) + RIPAM 3997 (R2) + Comune di Trieste Istruttore C (TS)",
     "note_generali": "Il campo 'bandi' indica a quale procedura si applica: R1=RIPAM Difesa 1100, R2=RIPAM 3997, TS=Trieste.",
-    "totale_quesiti_previsti": 327,
+    "totale_quesiti_previsti": 324,
     "materie": [
       { "materia_id": "M01_legge_241", "materia": "L. 241/1990 — Procedimento Amministrativo e Accesso", "bandi": ["R1","R2","TS"], "argomenti": [
         { "argomento_id": "A01_principi_rp", "argomento": "Principi generali del procedimento e responsabile del procedimento", "legge": "L. 241/1990 artt. 1-6-bis", "bandi": ["R1","R2","TS"], "n_quesiti": 3, "progressivo_da": 1, "progressivo_a": 3 },
@@ -96,9 +96,6 @@
         { "argomento_id": "A58_principi_contabili_armonia", "argomento": "Principi contabili generali e competenza finanziaria potenziata", "legge": "D.Lgs. 118/2011 artt. 1-3 + All. 1", "bandi": ["TS"], "n_quesiti": 3, "progressivo_da": 173, "progressivo_a": 175 },
         { "argomento_id": "A59_struttura_bilancio_armonizzato", "argomento": "Struttura del bilancio armonizzato: missioni, programmi, titoli, tipologie, categorie", "legge": "D.Lgs. 118/2011 artt. 11-17 + All. 13-14", "bandi": ["TS"], "n_quesiti": 3, "progressivo_da": 176, "progressivo_a": 178 },
         { "argomento_id": "A60_documenti_programmazione", "argomento": "DUP, bilancio di previsione, PEG, rendiconto; fondo pluriennale vincolato (FPV) e FCDE", "legge": "D.Lgs. 118/2011 artt. 151-155; All. 4/1", "bandi": ["TS"], "n_quesiti": 3, "progressivo_da": 179, "progressivo_a": 181 }
-      ]},
-      { "materia_id": "M12_performance", "materia": "D.Lgs. 150/2009 — Performance e PIAO", "bandi": ["R1","R2","TS"], "argomenti": [
-        { "argomento_id": "A61_ciclo_performance", "argomento": "Ciclo della performance: piano, relazione, OIV, trasparenza; integrazione con PIAO", "legge": "D.Lgs. 150/2009 (testo aggiornato D.Lgs. 74/2017); DPR 81/2022 (PIAO)", "bandi": ["R1","R2","TS"], "n_quesiti": 3, "progressivo_da": 182, "progressivo_a": 184 }
       ]},
       { "materia_id": "M13_contratti_pubblici", "materia": "D.Lgs. 36/2023 — Codice dei Contratti Pubblici", "bandi": ["R1","R2","TS"], "argomenti": [
         { "argomento_id": "A62_principi_contratti", "argomento": "Principi generali del nuovo codice: fiducia, risultato, accesso al mercato, legalità", "legge": "D.Lgs. 36/2023 artt. 1-12", "bandi": ["R1","R2","TS"], "n_quesiti": 3, "progressivo_da": 185, "progressivo_a": 187 },
