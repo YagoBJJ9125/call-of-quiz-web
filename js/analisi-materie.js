@@ -114,7 +114,7 @@
       if (!day || !day.risposte) continue;
       for (const r of day.risposte) {
         if (!r.quiz_id || r.mode !== 'ranked') continue;
-        out.push({ quiz_id: r.quiz_id, corretta: !!r.corretta, ts: r.ts || 0, data, mode: 'ranked' });
+        out.push({ quiz_id: r.quiz_id, corretta: !!r.corretta, ts: r.ts || 0, data, mode: 'ranked', recupero: !!r.recupero });
       }
     }
     return out;
@@ -689,6 +689,7 @@
           ts,
           data: ts ? new Date(ts).toISOString().substring(0, 10) : '0000-00-00',
           mode: r.mode || null,   // entry vecchie senza mode → null (solo in 'tutti')
+          recupero: !!r.recupero,
         });
       }
     }
@@ -706,7 +707,7 @@
       let s = stats[r.quiz_id];
       if (!s) s = stats[r.quiz_id] = { att: 0, cor: 0, err: 0, ultimoTs: -1, ultimoCorretta: false };
       s.att++;
-      if (r.corretta) s.cor++; else s.err++;
+      if (!r.recupero) { if (r.corretta) s.cor++; else s.err++; }
       if (r.ts >= s.ultimoTs) {
         s.ultimoTs = r.ts;
         s.ultimoCorretta = r.corretta;

@@ -65,8 +65,8 @@
       const iso = d.toISOString().substring(0, 10);
       const r = daily[iso];
       const fatti    = r ? (r.fatti || 0)    : 0;
-      const corrette = r ? (r.corrette || 0) : 0;
-      const errate   = r ? (r.errate || 0)   : 0;
+      const corrette = r ? Math.max(0, (r.corrette || 0) - (r.recuperoCorrette || 0)) : 0;
+      const errate   = r ? Math.max(0, (r.errate || 0) - (r.recuperoErrate || 0)) : 0;
       const target   = r ? (r.target || 0)   : 0;
       const rpDelta  = r && r.rpDelta ? (r.rpDelta.totale || 0) : 0;
       const denom    = corrette + errate;
@@ -86,7 +86,7 @@
       if (data < start) continue;
       if (!day.risposte) continue;
       for (const rr of day.risposte) {
-        if (rr.mode !== 'ranked') continue;
+        if (rr.mode !== 'ranked' || rr.recupero) continue;
         const m = rr.materia_id || '?';
         if (!perMateria[m]) perMateria[m] = { tot: 0, ok: 0 };
         perMateria[m].tot++;
@@ -455,7 +455,7 @@
         <div class="page-header rk-st-header page-header-bg pagebg-stats">
           <div>
             <h1 class="page-title">📈 I tuoi progressi</h1>
-            <div class="page-sub">Statistiche e grafici della Modalità Ranked</div>
+            <div class="page-sub">Statistiche e grafici della Modalità Ranked. L’accuratezza esclude le batterie di recupero; il numero di risposte include anche il recupero.</div>
           </div>
           <div class="rk-header-right">
             ${_pgTifosiHTML('progressi')}

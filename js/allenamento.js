@@ -52,7 +52,10 @@
     nodiSelezionati: new Set(),   // chiavi tipo "M:M01_x", "A:A01_y", "L:A01|0", "S:A01|0|2", "X:A01|22"
     libTreePath:     [],          // drill-down: [livello0_id, livello1_id, ...]
     saltaPadron:     true,        // salta quiz già padroneggiati nei pool
-    ignoraPiano:     false,       // Fase 5: false = rispetta piano save attivo, true = pesca da tutta la libreria
+    ignoraPiano:     true,        // Il Libero non usa mai il piano Ranked.
+    bandiIds: [],
+    composizione: {},
+    argomentiEsclusi: {},
     nQuiz:           30,
     pool:            'tutti',     // 'tutti' | 'mai_visti' | 'errati' | 'mix'
     modalita:        'esercitazione',  // 'esercitazione' | 'esame'
@@ -63,14 +66,37 @@
     materieSelezionate: new Set(),
     argomentiEspansi:   new Set(),
   };
+  const SK_LIB_CONFIG = 'cm:libero:config';
+  const libSalvata = caricaDaStorage(SK_LIB_CONFIG);
+  if (libSalvata) {
+    for (const key of ['nQuiz','pool','modalita','timerMode','ordine','saltaPadron','bandiIds','composizione','argomentiEsclusi']) {
+      if (libSalvata[key] !== undefined) CONFIG[key] = libSalvata[key];
+    }
+    CONFIG.nodiSelezionati = new Set(libSalvata.nodiSelezionati || []);
+  }
+  function _libSalvaConfig() {
+    salvaInStorage(SK_LIB_CONFIG, { ...CONFIG, nodiSelezionati: [...CONFIG.nodiSelezionati], materieSelezionate: [], argomentiEspansi: [] });
+  }
 
   // ─── Helper Fase 5: materie consentite dal piano del save attivo ──────
   // Wrapper sull'helper centralizzato di saves-core, con override toggle
   // "ignora piano" (esclusivo di Libero).
   function _libGetMaterieAmmesse() {
-    if (CONFIG.ignoraPiano) return null;
-    return (window.SavesCore && SavesCore.getMaterieAmmessePianoAttivo)
-            ? SavesCore.getMaterieAmmessePianoAttivo() : null;
+    if (!CONFIG.bandiIds.length) return null;
+    return new Set([...(STATE.pacchetto?.bandi || []).filter(b => CONFIG.bandiIds.includes(b.id))
+      .flatMap(b => b.piano.materieIds || []), ...[...CONFIG.nodiSelezionati].filter(k => k.startsWith('M:')).map(k => k.slice(2))]);
+  }
+  function _libComposizione() {
+    const ids = (STATE.pacchetto?.programma.materie || []).filter(m => _libMateriaAmmessa(m.id)).map(m => m.id);
+    const pesi = { ...CONFIG.composizione };
+    for (const m of (STATE.pacchetto?.programma.materie || [])) if (pesi[m.id] === undefined) pesi[m.id] = m.peso || 1;
+    return normalizzaPercentuali(pesi, ids);
+  }
+  function _libMateriaDelNodo(key) {
+    if (key.startsWith('M:')) return key.slice(2);
+    if (key.startsWith('A:_altro_')) return key.slice(9);
+    const aid = key.slice(2).split('|')[0];
+    return STATE.pacchetto.programma.materie.find(m => (m.argomenti || []).some(a => a.id === aid))?.id;
   }
   function _libMateriaAmmessa(materiaId) {
     const set = _libGetMaterieAmmesse();
@@ -133,29 +159,19 @@
           <button class="quick-btn" onclick="quickPickComuni()">Solo comuni</button>
           <button class="quick-btn" onclick="quickPickPesoAlto()">Peso ≥ 9</button>
         </div>
-        <div class="lib-piano-toggle" title="Quando attivo, pesca quiz da TUTTA la libreria. Quando disattivo, rispetta le materie del save attivo.">
-          <label class="lib-opt-row" style="margin:0">
-            <input type="checkbox" id="libIgnoraPiano" ${CONFIG.ignoraPiano ? 'checked' : ''}
-                   onchange="setIgnoraPiano(this.checked)">
-            <span>🌐 Ignora piano (tutta la libreria)</span>
-          </label>
-        </div>
         <div class="lib-sel-counter">
           <strong>${nSelezionati}</strong> ${nSelezionati === 1 ? 'nodo selezionato' : 'nodi selezionati'}
           ${nSelezionati > 0 ? `· pool: <strong>${quizPool.length}</strong> quiz` : ''}
         </div>
       </div>
-      ${(() => {
-        const sv = window.SavesCore ? SavesCore.getSaveAttivo() : null;
-        if (CONFIG.ignoraPiano) {
-          return '<div class="lib-piano-status libero">🌐 Modalità libera: pesca da tutta la libreria (' +
-                 (STATE.pacchetto.manifest.moduli || []).length + ' materie)</div>';
-        } else if (sv && sv.piano && sv.piano.materieIds) {
-          return '<div class="lib-piano-status">🎯 Filtrato sul piano: <strong>' +
-                 escapeHTML(sv.nome) + '</strong> · ' + sv.piano.materieIds.length + ' materie</div>';
-        }
-        return '';
-      })()}
+      <div class="lib-piano-status libero">Scelta indipendente da Ranked. Nessun bando spuntato = intera libreria.</div>
+      <fieldset class="lib-bandi"><legend>Bandi per questo allenamento</legend>
+        ${(STATE.pacchetto.bandi || []).filter(b => b.stato !== 'bozza').map(b => `<label class="lib-opt-row">
+          <input type="checkbox" data-lib-bando="${escapeAttr(b.id)}" ${CONFIG.bandiIds.includes(b.id) ? 'checked' : ''}>
+          ${escapeHTML(b.nome)}</label>`).join('')}
+      </fieldset>
+      <label>Schema materie e percentuali <select id="libSchemi"><option value="">Scegli uno schema salvato</option>
+        ${(caricaDaStorage('cm:schemi-pesi') || []).map(s => `<option value="${escapeAttr(s.id)}">${escapeHTML(s.nome)}</option>`).join('')}</select></label>
 
       <div class="lib-tree-scroll">
         <div class="lib-tree-canvas" id="libTreeCanvas">
@@ -189,9 +205,7 @@
             <div class="pill ${CONFIG.ordine === 'casuale' ? 'active' : ''}" onclick="setOrdine('casuale')">Casuale</div>
             <div class="pill ${CONFIG.ordine === 'peso'    ? 'active' : ''}" onclick="setOrdine('peso')">Per peso</div>
             <div class="pill ${CONFIG.ordine === 'materia' ? 'active' : ''}" onclick="setOrdine('materia')">Per materia</div>
-            ${(typeof carComposizioneBando === 'function' && carComposizioneBando()) ? `
-              <div class="pill ${CONFIG.ordine === 'bando' ? 'active' : ''}" onclick="setOrdine('bando')" title="Rispetta le percentuali per materia definite in Modifica piano">⚖ Pesi piano</div>
-            ` : ''}
+            <div class="pill ${CONFIG.ordine === 'bando' ? 'active' : ''}" onclick="setOrdine('bando')" title="Usa lo schema caricato o i pesi della libreria, mai il piano Ranked">⚖ Pesi allenamento</div>
           </div>
         </div>
 
@@ -230,6 +244,20 @@
     `;
 
     _libAttaccaListenerTree();
+    document.querySelectorAll('[data-lib-bando]').forEach(cb => cb.addEventListener('change', () => {
+      CONFIG.bandiIds = [...document.querySelectorAll('[data-lib-bando]:checked')].map(c => c.dataset.libBando);
+      CONFIG.nodiSelezionati.clear(); CONFIG.libTreePath = []; CONFIG.composizione = {}; CONFIG.argomentiEsclusi = {};
+      refreshConfigUI();
+    }));
+    document.getElementById('libSchemi').addEventListener('change', e => {
+      const schema = (caricaDaStorage('cm:schemi-pesi') || []).find(s => s.id === e.target.value);
+      if (!schema) return;
+      CONFIG.bandiIds = schema.piano.bandiIds || [];
+      CONFIG.nodiSelezionati = new Set(schema.piano.materieIds.map(id => 'M:' + id));
+      CONFIG.composizione = { ...schema.piano.composizione };
+      CONFIG.argomentiEsclusi = { ...schema.piano.argomentiEsclusi };
+      CONFIG.libTreePath = []; CONFIG.ordine = 'bando'; refreshConfigUI();
+    });
   }
 
   // ═══════ Tree picker — colonne drill-down con checkbox + ▶ ═══════
@@ -453,7 +481,7 @@
     btnConf.onclick = () => {
       const salta = document.getElementById('ql-salta-padr').checked;
       closeModal();
-      _libAvviaStudioMirato(ids, scelto, salta);
+      _libAvviaStudioMirato(ids, scelto, salta, _libMateriaDelNodo(nodeKey));
     };
     document.getElementById('modal').classList.add('active');
   }
@@ -511,7 +539,7 @@
   }
 
   // Avvia uno studio mirato (mini-batteria su singolo nodo)
-  function _libAvviaStudioMirato(idsSet, nQuiz, saltaPadron) {
+  function _libAvviaStudioMirato(idsSet, nQuiz, saltaPadron, materiaId) {
     const padron = carCaricaPadron();
     const ids = [...idsSet].filter(id => {
       if (!saltaPadron) return true;
@@ -527,15 +555,20 @@
     const wanted = new Set(ids);
     const quizObj = [];
     for (const m of STATE.pacchetto.manifest.moduli) {
+      if (!_libMateriaAmmessa(m.materia_id) || (materiaId && m.materia_id !== materiaId)) continue;
       const banca = STATE.pacchetto.banche[m.materia_id];
       if (!banca) continue;
       const arr = banca.categorizzati || banca.quiz || [];
       for (const q of arr) {
-        if (wanted.has(quizId(q))) quizObj.push({ ...q, _materia_id: m.materia_id });
+        const arg = q.categorizzazione?.argomento_id;
+        if (wanted.has(quizId(q)) && !(CONFIG.argomentiEsclusi[m.materia_id] || []).includes(arg) && !quizRichiedeImmagine(q)) {
+          quizObj.push({ ...q, _materia_id: m.materia_id });
+        }
       }
     }
     shuffle(quizObj);
     const scelti = quizObj.slice(0, Math.min(nQuiz, quizObj.length));
+    if (!scelti.length) { toast('Nessun quiz disponibile con i filtri attuali', true); return; }
 
     SESSIONE = {
       config: {
@@ -612,7 +645,11 @@
     CONFIG.libTreePath = [];
     refreshConfigUI();
   }
-  function refreshConfigUI() { renderAllenamentoLibero(); }
+  function refreshConfigUI() {
+    _libSalvaConfig();
+    const main = document.getElementById('main'), y = main.scrollTop, wy = window.scrollY;
+    renderAllenamentoLibero(); main.scrollTop = y; window.scrollTo(0, wy);
+  }
 
   // Legacy hooks (no-op, mantenuti per evitare ReferenceError su vecchi link)
   function toggleMateria()  { /* sostituito da _libToggleSelezione */ }
@@ -636,11 +673,9 @@
     const progress = caricaProgress();
     const result = [];
     // Fase 5 + 7: filtro piano (materie + argomenti esclusi). Se ignoraPiano: null
-    const filtro = (CONFIG.ignoraPiano || !window.SavesCore)
-                    ? null
-                    : (SavesCore.getFiltroPianoAttivo ? SavesCore.getFiltroPianoAttivo() : null);
+    const materieSelezionate = new Set([...CONFIG.nodiSelezionati].map(_libMateriaDelNodo).filter(Boolean));
     for (const m of STATE.pacchetto.manifest.moduli) {
-      if (filtro && filtro.materieAmmesse && !filtro.materieAmmesse.has(m.materia_id)) continue;
+      if (!_libMateriaAmmessa(m.materia_id) || !materieSelezionate.has(m.materia_id)) continue;
       const banca = STATE.pacchetto.banche[m.materia_id];
       if (!banca) continue;
       const arr = banca.categorizzati || banca.quiz || [];
@@ -648,7 +683,7 @@
         const id = quizId(q);
         if (!wanted.has(id)) continue;
         const argId = q.categorizzazione && q.categorizzazione.argomento_id;
-        if (filtro && !filtro.quizPassa(m.materia_id, argId)) continue;
+        if ((CONFIG.argomentiEsclusi[m.materia_id] || []).includes(argId)) continue;
         // salta quiz che richiedono immagini non disponibili
         if (quizRichiedeImmagine(q)) continue;
         // salta padroneggiati
@@ -680,7 +715,7 @@
     }
     let pescati;
     if (CONFIG.ordine === 'bando') {
-      const composizione = (typeof carComposizioneBando === 'function') ? carComposizioneBando() : null;
+      const composizione = _libComposizione();
       pescati = (typeof pescaProporzionale === 'function')
                 ? pescaProporzionale(disponibili, CONFIG.nQuiz, composizione, { getMateriaId: q => q._materia_id })
                 : null;

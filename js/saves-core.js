@@ -113,6 +113,7 @@
         // vedi bandi_catalogo.json). Serve solo a mostrare il badge "da preset X"
         // e a offrire il bottone "ri-applica preset" nel wizard di modifica.
         bandoId: opts.bandoId || null,
+        _materieMigrate: MATERIE_AGGIUNTE.slice(),
       };
       const lista = getListaSaves();
       lista.push(save);
@@ -309,7 +310,7 @@
         if (!Array.isArray(s._materieMigrate)) s._materieMigrate = [];
         for (const id of MATERIE_AGGIUNTE) {
           if (s._materieMigrate.includes(id)) continue;       // già migrata su questo save
-          if (!s.piano.materieIds.includes(id)) {
+          if (!s.bandoId && !(s.piano.bandiIds || []).length && !s.piano.materieIds.includes(id)) {
             s.piano.materieIds.push(id);
             console.info('[saves-core] migrata materia %s nel piano del save %s', id, s.id);
           }

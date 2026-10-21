@@ -261,6 +261,7 @@
         sessione:    SESSIONE.avvio,
         // Tracciamento sorgente (per Analisi Globale: filtro origine + finestra fonti)
         mode:        _modeRisp,
+        recupero:    !!SESSIONE.config._recupero,
         saveId:      (_modeRisp === 'ranked' && window.SavesCore) ? SavesCore.getSaveAttivoId() : null,
       });
       salvaProgress(progress);
@@ -479,6 +480,7 @@
     progress.sessioni.push({
       timestamp: SESSIONE.avvio,
       tipo:      èRanked ? 'ranked' : 'allenamento_libero',
+      recupero:  !!SESSIONE.config._recupero,
       modalita:  SESSIONE.config.modalita,
       pool:      SESSIONE.config.pool,
       totale:    SESSIONE.quiz.length,

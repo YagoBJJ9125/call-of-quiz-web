@@ -179,27 +179,29 @@
     const sv = SavesCore.getSaveAttivo();
     if (!sv) return { tot: 0, padron: 0, affrontati: 0, perc: 0, saveId: null, saveNome: null };
 
-    // Usa il filtro centrale (materie + argomenti esclusi)
-    const filtro = SavesCore.getFiltroPianoAttivo
-                    ? SavesCore.getFiltroPianoAttivo() : null;
+    const scelta = caricaDaStorage('cm:ranked:banca-vista') || 'piano';
+    const catalogo = STATE.pacchetto.bandi || [];
+    const bando = catalogo.find(b => b.id === scelta);
+    const idsBando = bando ? new Set(bando.piano.materieIds) : null;
+    const filtro = idsBando ? { materieAmmesse: idsBando, quizPassa: mid => idsBando.has(mid) }
+      : SavesCore.getFiltroPianoAttivo ? SavesCore.getFiltroPianoAttivo() : null;
     const padronMap = (typeof carCaricaPadron === 'function') ? (carCaricaPadron() || {}) : {};
 
-    // "Affrontati" = quiz UNICI affrontati IN QUESTO SAVE (diario del save),
-    // NON il progress globale. Così combacia con la Mappatura Materie Ranked.
-    // tentativiPerId = quante volte ho risposto a ciascun quiz (per i doppioni).
-    const tentativiPerId = new Map();
-    let diarioSave = null;
-    try { diarioSave = SavesCore.leggiSave(sv.id, 'cm:carriera:diario'); } catch (_) {}
-    if (diarioSave) {
-      // Save = mondo Ranked: conto SOLO le risposte mode='ranked'.
-      for (const day of Object.values(diarioSave)) {
-        if (!day || !day.risposte) continue;
-        for (const r of day.risposte) {
-          if (!r.quiz_id || r.mode !== 'ranked') continue;
-          tentativiPerId.set(r.quiz_id, (tentativiPerId.get(r.quiz_id) || 0) + 1);
-        }
+    // I progressi della banca appartengono all'utente, non al nome del save.
+    // Progress globale e diari sono due copie degli stessi tentativi: per
+    // ogni quiz uso il massimo dei conteggi, mai la somma. Escludo gli shadow
+    // mode=sync della propagazione RP, che non sono risposte dell'utente.
+    const tentativiPerId = new Map(), neiDiari = new Map();
+    for (const r of (caricaProgress().risposte || [])) {
+      if (r.quiz_id && r.mode !== 'sync') tentativiPerId.set(r.quiz_id, (tentativiPerId.get(r.quiz_id) || 0) + 1);
+    }
+    for (const save of SavesCore.getListaSaves()) {
+      const diario = SavesCore.leggiSave(save.id, 'cm:carriera:diario') || {};
+      for (const day of Object.values(diario)) for (const r of (day?.risposte || [])) {
+        if (r.quiz_id && r.mode !== 'sync') neiDiari.set(r.quiz_id, (neiDiari.get(r.quiz_id) || 0) + 1);
       }
     }
+    for (const [id, n] of neiDiari) tentativiPerId.set(id, Math.max(n, tentativiPerId.get(id) || 0));
 
     // Dedup per quiz_id: stesso ID nelle banche multiple → conta UNA volta.
     const idsInPiano = new Set();
@@ -225,7 +227,8 @@
     return {
       tot, padron, affrontati, tentativi,
       perc: tot > 0 ? padron / tot : 0,
-      saveId: sv.id, saveNome: sv.nome,
+      saveId: sv.id, saveNome: bando ? bando.nome :
+        catalogo.filter(b => ((sv.piano?.bandiIds || (sv.bandoId ? [sv.bandoId] : []))).includes(b.id)).map(b => b.nome).join(' + ') || 'Piano Ranked personalizzato',
     };
   }
 
@@ -263,13 +266,15 @@
     const restantiObiettivo = Math.max(0, target - fatti);
     const obiettivoCompletato = target > 0 && fatti >= target;
 
-    const denomReale = (daily.corrette || 0) + (daily.errate || 0);
-    const accOggi = denomReale > 0 ? Math.round(daily.corrette / denomReale * 100) : null;
+    const corretteAcc = Math.max(0, (daily.corrette || 0) - (daily.recuperoCorrette || 0));
+    const errateAcc = Math.max(0, (daily.errate || 0) - (daily.recuperoErrate || 0));
+    const denomReale = corretteAcc + errateAcc;
+    const accOggi = denomReale > 0 ? Math.round(corretteAcc / denomReale * 100) : null;
     const rpDeltaOggi = (daily.rpDelta && daily.rpDelta.totale) || 0;
 
-    const acc1    = stat1.fatti > 0 ? Math.round(stat1.accuratezza * 100) : null;
-    const acc7    = stat7.fatti > 0 ? Math.round(stat7.accuratezza * 100) : null;
-    const acc30   = stat30.fatti > 0 ? Math.round(stat30.accuratezza * 100) : null;
+    const acc1    = stat1.accuratezza !== null ? Math.round(stat1.accuratezza * 100) : null;
+    const acc7    = stat7.accuratezza !== null ? Math.round(stat7.accuratezza * 100) : null;
+    const acc30   = stat30.accuratezza !== null ? Math.round(stat30.accuratezza * 100) : null;
     const giorniAttivi7 = stat7.giorniAttivi;
     const completati7   = stat7.completati;
 
@@ -360,17 +365,22 @@
                   <strong class="${ccAff}">${percAff}%</strong> affrontato
                 </div>
               </div>
+              <label>Banca da visualizzare <select id="rkBancaBando">
+                <option value="piano">Piano Ranked attuale</option>
+                ${(STATE.pacchetto.bandi || []).filter(b => b.stato !== 'bozza').map(b => `<option value="${escapeAttr(b.id)}" ${caricaDaStorage('cm:ranked:banca-vista') === b.id ? 'selected' : ''}>${escapeHTML(b.nome)}</option>`).join('')}
+              </select></label>
+              <div class="wiz-hint">Tentativi reali di tutte le partite e dell’allenamento libero. Cambiare questa vista non cambia il piano Ranked.</div>
               <div class="battery-bar" aria-label="${percAff}% affrontato">
                 ${segments}
               </div>
               <div class="am-piano-meta">
-                <span title="Quiz UNICI affrontati almeno una volta in questo save (al netto dei doppioni). È questo che riempie la barra."><strong>${av.affrontati.toLocaleString('it-IT')}</strong> / ${av.tot.toLocaleString('it-IT')} affrontati (${percAff}%)</span>
+                <span title="Quiz UNICI della banca affrontati almeno una volta, in qualsiasi partita o in Libero."><strong id="rkBancaAffrontati">${av.affrontati.toLocaleString('it-IT')}</strong> / ${av.tot.toLocaleString('it-IT')} affrontati (${percAff}%)</span>
                 <span class="am-piano-sep">·</span>
-                <span title="Numero TOTALE di risposte date in questo save, inclusi i quiz rivisti più volte (con doppioni)."><strong>${(av.tentativi||0).toLocaleString('it-IT')}</strong> risposte totali <em class="rk-dup-note">(con doppioni)</em></span>
+                <span title="Tentativi reali nella banca, incluse ripetizioni e recupero; nessun doppio conteggio tra progress e diario."><strong id="rkBancaTentativi">${(av.tentativi||0).toLocaleString('it-IT')}</strong> risposte totali <em class="rk-dup-note">(con doppioni)</em></span>
                 <span class="am-piano-sep">·</span>
                 <span title="Quiz padroneggiati: risposti correttamente in almeno 3 giorni diversi."><strong>${av.padron.toLocaleString('it-IT')}</strong> / ${av.tot.toLocaleString('it-IT')} padroneggiati</span>
                 <button class="btn btn-ghost btn-rk-dettaglio" id="rk-vai-analisi"
-                        title="Apri la mappa capillare delle materie di questo save (solo le sue materie e le sue risposte)">🗺 Mappatura materie ranked</button>
+                        title="Apri la mappa delle materie e delle risposte del piano Ranked attivo">🗺 Mappatura piano Ranked</button>
               </div>
             </div>
           `;
@@ -392,7 +402,7 @@
               ${obiettivoCompletato
                 ? `<span class="rk-tag rk-tag-ok" title="Hai raggiunto il target di quiz di oggi. Bonus RP a fine giornata, se batteria di rilascio è stata completata.">✓ Obiettivo raggiunto</span>`
                 : `<span class="rk-tag rk-tag-neutral" title="Quiz ancora da fare oggi per raggiungere il target">${restantiObiettivo} restanti</span>`}
-              ${accOggi !== null ? `<span class="rk-tag rk-tag-info" title="% di risposte corrette oggi, sull'ultimo tentativo di ogni quiz">${accOggi}% accuratezza oggi</span>` : ''}
+              ${accOggi !== null ? `<span class="rk-tag rk-tag-info" title="Risposte corrette nei round ordinari: il recupero è escluso dall’accuratezza">${accOggi}% accuratezza oggi</span>` : ''}
               <span class="rk-tag ${rpDeltaOggi >= 0 ? 'rk-tag-up' : 'rk-tag-down'}"
                     title="Punti rank guadagnati o persi oggi nelle batterie effettivamente completate. RP non assegnato per batterie interrotte.">
                 ${rpDeltaOggi >= 0 ? '+' : ''}${rpDeltaOggi.toFixed(2)} punti rank oggi
@@ -518,6 +528,11 @@
     // Inizia round → parte subito con la dimensione salvata
     document.getElementById('rk-inizia-round').addEventListener('click', () => {
       rankedAvviaRound(dimRound);
+    });
+    document.getElementById('rkBancaBando')?.addEventListener('change', e => {
+      salvaInStorage('cm:ranked:banca-vista', e.target.value);
+      const main = document.getElementById('main'), y = main.scrollTop, wy = window.scrollY;
+      rankedRender(); main.scrollTop = y; window.scrollTo(0, wy);
     });
     document.getElementById('rk-cambia-target').addEventListener('click', rankedMostraPickerTarget);
     const btnStats = document.getElementById('rk-vai-stats');

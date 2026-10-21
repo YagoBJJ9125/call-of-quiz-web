@@ -476,6 +476,22 @@
       // utenti finché non completate e pubblicate.
       const catalogoBandi = (STATE.pacchetto.bandi || []).filter(b => b.stato !== 'bozza');
       let composizione = {}; // materia_id → percentuale effettiva nelle batterie
+      const bandiSelezionati = new Set();
+      const SK_SCHEMI_PESI = 'cm:schemi-pesi';
+      let schemaSelezionato = '';
+      const schemi = () => caricaDaStorage(SK_SCHEMI_PESI) || [];
+      function _idsBandi() {
+        return [...new Set(catalogoBandi.filter(b => bandiSelezionati.has(b.id))
+          .flatMap(b => b.piano.materieIds || []))];
+      }
+      function _moduliVisibili() {
+        if (!bandiSelezionati.size) return moduli;
+        const ids = new Set(_idsBandi());
+        // Materie manuali preesistenti: restano accessibili senza mostrare
+        // tutte le banche degli altri concorsi.
+        for (const id of sel) ids.add(id);
+        return moduli.filter(m => ids.has(m.materia_id));
+      }
 
       function _normalizzaComposizione(sorgente, idsInput) {
         const ids = idsInput || [...sel];
@@ -510,21 +526,16 @@
             ? piano.pesiOverride
             : _pesiGlobali(idsInput);
       }
+      function _pesiBandiCorrenti() {
+        const out = _pesiGlobali([...sel]);
+        for (const b of catalogoBandi.filter(b => bandiSelezionati.has(b.id)).reverse()) {
+          Object.assign(out, _sorgentePreset(b, b.piano.materieIds || []));
+        }
+        return out;
+      }
 
       function _impostaPercentuale(mid, valore) {
-        const ids = [...sel];
-        if (!ids.includes(mid)) return;
-        if (ids.length === 1) { composizione = { [mid]: 100 }; return; }
-        const desiderata = Math.max(0, Math.min(100, Number(valore) || 0));
-        const altri = ids.filter(id => id !== mid);
-        const residuo = 100 - desiderata;
-        const totaleAltri = altri.reduce((s, id) => s + Math.max(0, Number(composizione[id]) || 0), 0);
-        const nuova = { [mid]: desiderata };
-        altri.forEach(id => {
-          nuova[id] = totaleAltri > 0 ? residuo * Math.max(0, Number(composizione[id]) || 0) / totaleAltri
-                                      : residuo / altri.length;
-        });
-        composizione = nuova;
+        if (sel.has(mid)) composizione[mid] = Math.max(0, Math.min(100, Number(valore) || 0));
       }
 
       function _nomeMateria(mid) {
@@ -551,6 +562,8 @@
         });
         pesiOverride = Object.assign({}, (saveEsistente.piano && saveEsistente.piano.pesiOverride) || {});
         bandoIdSelezionato = saveEsistente.bandoId || null;
+        ((saveEsistente.piano && saveEsistente.piano.bandiIds) ||
+          (bandoIdSelezionato ? [bandoIdSelezionato] : [])).forEach(id => bandiSelezionati.add(id));
       } else {
         // Crea da zero: pre-seleziona tutte le materie
         for (const m of moduli) sel.add(m.materia_id);
@@ -574,6 +587,7 @@
       let vista = (!editing && catalogoBandi.length > 0) ? 'bando' : 'materie';
 
       function _applicaBando(bando) {
+        bandiSelezionati.clear(); bandiSelezionati.add(bando.id);
         sel.clear(); espansi.clear();
         (bando.piano && bando.piano.materieIds || []).forEach(id => sel.add(id));
         Object.keys(argEsclusi).forEach(k => delete argEsclusi[k]);
@@ -586,7 +600,24 @@
         bandoIdSelezionato = bando.id;
         if (!editing) nomeScelto = bando.nome || '';
         vista = 'materie';
+        render(false);
+      }
+
+      function _cambiaBando(id, checked) {
+        const prima = new Set(_idsBandi());
+        if (checked) bandiSelezionati.add(id); else bandiSelezionati.delete(id);
+        const dopo = new Set(_idsBandi());
+        for (const mid of [...sel]) if (!dopo.has(mid)) { sel.delete(mid); delete composizione[mid]; }
+        for (const mid of dopo) if (!prima.has(mid)) { sel.add(mid); composizione[mid] = 1; }
+        bandoIdSelezionato = [...bandiSelezionati][0] || null;
+        composizione = _normalizzaComposizione(composizione, [...sel]);
         render();
+      }
+      function _renderBandiMultipli() {
+        return `<div class="wiz-section"><label class="wiz-label">Bandi del piano (puoi selezionarne più di uno)</label>
+          <div class="wiz-bandi-select">${catalogoBandi.map(b => `<label class="wiz-opt">
+            <input type="checkbox" data-wiz-bando="${_esc(b.id)}" ${bandiSelezionati.has(b.id) ? 'checked' : ''}>
+            ${_esc(b.nome)}</label>`).join('')}</div></div>`;
       }
 
       const main = document.getElementById('main');
@@ -720,7 +751,8 @@
 
       function _renderComposizione() {
         const ids = moduli.map(m => m.materia_id).filter(id => sel.has(id));
-        const percentuali = _normalizzaComposizione(composizione, ids);
+        const percentuali = composizione;
+        const totale = ids.reduce((n, id) => n + (Number(composizione[id]) || 0), 0);
         const quote40 = (typeof ripartisciProporzionale === 'function')
           ? ripartisciProporzionale(40, percentuali) : {};
         return `
@@ -730,9 +762,18 @@
               <div class="wiz-quick">
                 <button class="btn btn-ghost btn-sm" id="wizPesiPreset">Ripristina pesi</button>
                 <button class="btn btn-ghost btn-sm" id="wizPesiUguali">Dividi in parti uguali</button>
+                <button class="btn btn-ghost btn-sm" id="wizPesiNormalizza">Normalizza al 100%</button>
               </div>
             </div>
-            <div class="wiz-hint">Le percentuali sommano sempre al 100%. Quando ne modifichi una, il resto viene redistribuito proporzionalmente. La stima a destra mostra la composizione di una batteria da 40 quiz.</div>
+            <div class="wiz-hint">Modifica liberamente ogni valore: gli altri non cambiano. Totale: <strong id="wizPesoTotale">${totale.toFixed(1)}%</strong>. Prima di salvare deve essere 100%, oppure usa Normalizza. La stima a destra ripartisce 40 quiz in proporzione ai valori.</div>
+            <div class="wiz-schemi">
+              <label>Schema salvato <select id="wizSchemi"><option value="">Scegli uno schema</option>${schemi().map(s => `<option value="${_esc(s.id)}" ${s.id === schemaSelezionato ? 'selected' : ''}>${_esc(s.nome)}</option>`).join('')}</select></label>
+              <button class="btn btn-ghost btn-sm" id="wizSchemaCarica">Carica schema</button>
+              <button class="btn btn-ghost btn-sm" id="wizSchemaElimina">Elimina schema</button>
+              <label>Nome schema <input id="wizSchemaNome" placeholder="Es. Inglese e logica"></label>
+              <button class="btn btn-ghost btn-sm" id="wizSchemaSalva">Salva schema</button>
+              <div class="wiz-hint">Gli schemi conservano materie, bandi, argomenti esclusi e percentuali. Non cambiano RP o storico.</div>
+            </div>
             <div class="wiz-weight-list">
               ${ids.map(mid => {
                 const pct = percentuali[mid] || 0;
@@ -785,11 +826,26 @@
         });
       }
 
-      function render() {
+      function render(preserva = true) {
+        const y = main.scrollTop, wy = window.scrollY;
+        const scrollInterni = ['.wiz-rows', '.wiz-weight-list'].map(selector => ({ selector, y: main.querySelector(selector)?.scrollTop || 0 }));
+        const nome = document.getElementById('wizNome');
+        if (nome) nomeScelto = nome.value;
+        const active = document.activeElement;
+        const attr = ['data-mat', 'data-arg', 'data-wiz-peso', 'data-wiz-bando'].find(a => active && active.hasAttribute(a));
+        const focus = attr ? `${active.tagName.toLowerCase()}[${attr}="${CSS.escape(active.getAttribute(attr))}"]` : null;
+        _render();
+        if (preserva) {
+          for (const s of scrollInterni) { const el = main.querySelector(s.selector); if (el) el.scrollTop = s.y; }
+          main.scrollTop = y; window.scrollTo(0, wy);
+          if (focus) main.querySelector(focus)?.focus({ preventScroll: true });
+        } else { main.scrollTop = 0; window.scrollTo(0, 0); }
+      }
+      function _render() {
         if (vista === 'bando') { _renderSchermataBando(); return; }
 
         const calc = _calcolaRankSuggerito([...sel]);   // basato solo su materie
-        const righe = moduli.map(_renderRigaMateria).join('');
+        const righe = _moduliVisibili().map(_renderRigaMateria).join('');
 
         const titolo = editing ? `✎ Modifica piano: ${_esc(saveEsistente.nome)}` : '＋ Nuovo save';
         const subtitolo = editing
@@ -806,8 +862,8 @@
             ${_renderTabBar()}
             ${bandoAttivo ? `
               <div class="wiz-bando-badge">
-                Preset: <strong>${_esc(bandoAttivo.nome)}</strong>
-                <button class="btn-link" id="wizRiapplicaBando">🔄 Ri-applica preset</button>
+                Preset: <strong>${_esc(catalogoBandi.filter(b => bandiSelezionati.has(b.id)).map(b => b.nome).join(' + ') || bandoAttivo.nome)}</strong>
+                ${bandiSelezionati.size < 2 ? '<button class="btn-link" id="wizRiapplicaBando">🔄 Ri-applica preset</button>' : ''}
               </div>
             ` : ''}
           </div>
@@ -818,6 +874,8 @@
               <input type="text" class="wiz-input" id="wizNome" placeholder="Es. Bando RIPAM 2026, Vigili VVF, Studio leggero..." value="${_esc(nomeScelto)}">
             </div>
           `}
+
+          ${_renderBandiMultipli()}
 
           <div class="wiz-section">
             <div class="wiz-section-h">
@@ -890,7 +948,7 @@
           });
         });
         document.getElementById('wizPickAll').addEventListener('click', () => {
-          for (const m of moduli) {
+          for (const m of _moduliVisibili()) {
             sel.add(m.materia_id);
             if (composizione[m.materia_id] == null) composizione[m.materia_id] = Number(infoMateria[m.materia_id] && infoMateria[m.materia_id].peso) || 1;
           }
@@ -912,6 +970,43 @@
         });
         document.getElementById('wizConferma').addEventListener('click', _onConferma);
         _attachTabListeners();
+        main.querySelectorAll('[data-wiz-bando]').forEach(cb => cb.addEventListener('change', () => _cambiaBando(cb.dataset.wizBando, cb.checked)));
+        document.getElementById('wizPesiNormalizza')?.addEventListener('click', () => {
+          composizione = _normalizzaComposizione(composizione, [...sel]); render();
+        });
+        document.getElementById('wizSchemi')?.addEventListener('change', e => { schemaSelezionato = e.target.value; });
+        document.getElementById('wizSchemaSalva')?.addEventListener('click', () => {
+          const nome = document.getElementById('wizSchemaNome').value.trim();
+          if (!nome) { toast('Dai un nome allo schema', true); return; }
+          if (!_percentualiValide()) return;
+          const lista = schemi();
+          if (lista.some(s => s.nome.toLowerCase() === nome.toLowerCase())) { toast('Nome già usato: scegli un altro nome o elimina lo schema precedente', true); return; }
+          const id = 'schema_' + Date.now().toString(36);
+          lista.push({ id, nome, piano: _pianoCorrente() });
+          salvaInStorage(SK_SCHEMI_PESI, lista); schemaSelezionato = id;
+          toast('Schema salvato'); render();
+        });
+        document.getElementById('wizSchemaCarica')?.addEventListener('click', () => {
+          const schema = schemi().find(s => s.id === schemaSelezionato);
+          if (!schema) { toast('Scegli uno schema', true); return; }
+          const p = schema.piano;
+          const noti = new Set(moduli.map(m => m.materia_id));
+          if (p.materieIds.some(id => !noti.has(id))) { toast('Lo schema contiene materie non più disponibili', true); return; }
+          sel.clear(); p.materieIds.forEach(id => sel.add(id));
+          bandiSelezionati.clear(); (p.bandiIds || []).forEach(id => bandiSelezionati.add(id));
+          bandoIdSelezionato = [...bandiSelezionati][0] || null;
+          Object.keys(argEsclusi).forEach(id => delete argEsclusi[id]);
+          Object.entries(p.argomentiEsclusi || {}).forEach(([id, arr]) => { argEsclusi[id] = new Set(arr); });
+          composizione = Object.assign({}, p.composizione); pesiOverride = Object.assign({}, p.pesiOverride);
+          espansi.clear(); render(); toast('Schema caricato: ' + schema.nome);
+        });
+        document.getElementById('wizSchemaElimina')?.addEventListener('click', () => {
+          if (!schemaSelezionato) return;
+          showModal('Eliminare lo schema?', 'Il piano e i progressi non saranno modificati.', () => {
+            salvaInStorage(SK_SCHEMI_PESI, schemi().filter(s => s.id !== schemaSelezionato));
+            schemaSelezionato = ''; render();
+          });
+        });
         const bRiapplica = document.getElementById('wizRiapplicaBando');
         if (bRiapplica) bRiapplica.addEventListener('click', () => _applicaBando(bandoRiapplicabile));
         document.querySelectorAll('[data-wiz-peso]').forEach(input => {
@@ -922,8 +1017,7 @@
         });
         const bPesiPreset = document.getElementById('wizPesiPreset');
         if (bPesiPreset) bPesiPreset.addEventListener('click', () => {
-          const bando = bandoIdSelezionato ? catalogoBandi.find(b => b.id === bandoIdSelezionato) : null;
-          composizione = _normalizzaComposizione(bando ? _sorgentePreset(bando, [...sel]) : _pesiGlobali([...sel]), [...sel]);
+          composizione = _normalizzaComposizione(_pesiBandiCorrenti(), [...sel]);
           render();
         });
         const bPesiUguali = document.getElementById('wizPesiUguali');
@@ -967,10 +1061,15 @@
         `;
       }
 
-      function _onConferma() {
-        if (sel.size === 0) { toast('Seleziona almeno una materia', true); return; }
+      function _percentualiValide() {
+        const tot = [...sel].reduce((n, id) => n + (Number(composizione[id]) || 0), 0);
+        if (!sel.size || Math.abs(tot - 100) > 0.05) { toast('Le percentuali devono sommare al 100%. Correggi i valori o usa Normalizza.', true); return false; }
+        return true;
+      }
+      function _pianoCorrente() {
         // Costruisco l'oggetto piano nel formato canonico
         const pianoOut = { materieIds: [...sel] };
+        pianoOut.bandiIds = [...bandiSelezionati];
         const esclSerial = {};
         for (const mid of Object.keys(argEsclusi)) {
           if (sel.has(mid) && argEsclusi[mid].size > 0) {
@@ -979,9 +1078,14 @@
         }
         if (Object.keys(esclSerial).length > 0) pianoOut.argomentiEsclusi = esclSerial;
         if (pesiOverride && Object.keys(pesiOverride).length > 0) pianoOut.pesiOverride = pesiOverride;
-        const compNormalizzata = _normalizzaComposizione(composizione, [...sel]);
         pianoOut.composizione = {};
-        [...sel].forEach(mid => { pianoOut.composizione[mid] = Number((compNormalizzata[mid] || 0).toFixed(4)); });
+        [...sel].forEach(mid => { pianoOut.composizione[mid] = Number((composizione[mid] || 0).toFixed(4)); });
+        return pianoOut;
+      }
+      function _onConferma() {
+        if (sel.size === 0) { toast('Seleziona almeno una materia', true); return; }
+        if (!_percentualiValide()) return;
+        const pianoOut = _pianoCorrente();
 
         if (editing) {
           // ── Modalità modifica: aggiorna piano del save esistente ──

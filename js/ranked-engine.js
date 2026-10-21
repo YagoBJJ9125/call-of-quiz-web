@@ -435,6 +435,7 @@
       ts: Date.now(),
       slot: null,
       mode: 'ranked',
+      recupero: !!SESSIONE.config._recupero,
     });
     carSalvaDiario(diario);
 
@@ -467,6 +468,10 @@
     rankedAggiornaDaily(d => {
       d.fatti++;
       if (corretta) d.corrette++; else d.errate++;
+      if (SESSIONE.config._recupero) {
+        const key = corretta ? 'recuperoCorrette' : 'recuperoErrate';
+        d[key] = (d[key] || 0) + 1;
+      }
     });
 
     // 5) Aggiorna ultimoGiornoAttivo

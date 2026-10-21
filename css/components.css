@@ -802,6 +802,18 @@
   .wiz-quick { display: flex; gap: 6px; }
   .btn.btn-sm { padding: 4px 10px; font-size: 11px; }
 
+  .wiz-bandi-select, .lib-bandi {
+    display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0;
+  }
+  .wiz-schemi {
+    display: flex; flex-wrap: wrap; align-items: end; gap: 10px;
+    margin: 12px 0 18px; padding: 12px; border: 1px solid var(--border-soft); border-radius: 8px;
+  }
+  .wiz-schemi label { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .wiz-schemi input, .wiz-schemi select, #libSchemi, #rkBancaBando {
+    max-width: 100%; padding: 8px; color: var(--text-primary); background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 6px;
+  }
+  .wiz-schemi .wiz-hint { flex-basis: 100%; }
   .wiz-rows {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 8px;

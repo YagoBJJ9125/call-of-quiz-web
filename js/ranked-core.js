@@ -755,7 +755,7 @@
       const day = diario[data];
       if (!day || !day.risposte) continue;
       for (const r of day.risposte) {
-        if (r.mode !== 'ranked') continue;
+        if (r.mode !== 'ranked' || r.recupero) continue;
         const m = r.materia_id || '?';
         if (!stat[m]) stat[m] = { ok: 0, ko: 0 };
         if (r.corretta) stat[m].ok++; else stat[m].ko++;
@@ -785,14 +785,14 @@
       if (!rec) continue;
       if (rec.fatti > 0) out.giorniAttivi++;
       out.fatti    += rec.fatti    || 0;
-      out.corrette += rec.corrette || 0;
-      out.errate   += rec.errate   || 0;
+      out.corrette += Math.max(0, (rec.corrette || 0) - (rec.recuperoCorrette || 0));
+      out.errate   += Math.max(0, (rec.errate || 0) - (rec.recuperoErrate || 0));
       out.target   += rec.target   || 0;
       out.rpDelta  += (rec.rpDelta && rec.rpDelta.totale) || 0;
       if (rec.completato) out.completati++;
     }
     const denomReale = out.corrette + out.errate;
-    out.accuratezza = denomReale > 0 ? (out.corrette / denomReale) : 0;
+    out.accuratezza = denomReale > 0 ? (out.corrette / denomReale) : null;
     return out;
   }
 
