@@ -107,7 +107,7 @@
       if (!day || !day.risposte) continue;
       for (const r of day.risposte) {
         const id = r.quiz_id;
-        if (!id) continue;
+        if (!id || r.mode === 'sync') continue;
         if (!info[id]) info[id] = { corretteTot: 0, ultimoCorretta: null, ultimoData: null };
         if (r.corretta) info[id].corretteTot++;
         info[id].ultimoCorretta = !!r.corretta;
@@ -115,10 +115,18 @@
       }
     }
 
+    const ultimiEsiti = _rankedUltimiEsiti();
     const nuovi = [], errori = [], review = [], consolidati = [];
     for (const item of pool) {
       const id = item.id;
-      const f = info[id];
+      const ultimo = ultimiEsiti.get(id);
+      // Conserva la finestra ordinaria di 90 giorni per i quiz già corretti;
+      // solo gli errori aperti devono riemergere anche dal Libero/archivio.
+      const f = ultimo && (info[id] || !ultimo.corretta) ? {
+        corretteTot: info[id]?.corretteTot || 0,
+        ultimoCorretta: ultimo.corretta,
+        ultimoData: new Date(ultimo.ts).toISOString().substring(0, 10),
+      } : info[id];
       if (!f) { nuovi.push(item); continue; }   // mai visto
       const isPadron = èPadroneggiato(padron[id]);
 
@@ -152,7 +160,7 @@
   // precedenti, tutti i numeri quadrano alla riga.
   //
   // Criteri (in ordine):
-  //   1. Scansiona il diario del SAVE ATTIVO
+  //   1. Unisce risposte reali globali (anche Libero) e diario del save attivo
   //   2. Per ogni quiz_id, tiene SOLO l'ultimo esito (ordine cronologico)
   //   3. Esclude le righe `mode:'sync'` (propagazioni da altri save, non
   //      rispostete davvero qui)
@@ -167,31 +175,34 @@
   //     totale: number,                 // = ids.size
   //     pool: Array<{quiz,id,materiaId}>, // pronto per costruire SESSIONE
   //   }
-  function _rankedErroriRecuperabili() {
-    const diario = carCaricaDiario();
-    const ultimoEsito = {};    // quiz_id → {corretta, materia_id}
-    const ultimaTsErrato = {}; // quiz_id → timestamp (ms) dell'ultima risposta errata
-    const giorni = Object.keys(diario).sort();
-    for (const data of giorni) {
-      const day = diario[data];
-      if (!day || !day.risposte) continue;
-      for (const r of day.risposte) {
-        if (!r.quiz_id) continue;
-        if (r.mode === 'sync') continue;        // esclude propagazioni
-        ultimoEsito[r.quiz_id] = {
-          corretta: !!r.corretta,
-          materia_id: r.materia_id || null,
-        };
-        // Traccia il timestamp dell'ultima risposta errata (per il cooldown)
-        if (!r.corretta) {
-          ultimaTsErrato[r.quiz_id] = r.ts || 0;
-        }
-      }
+  // Conoscenza ed errori sono globali; RP e accuratezza restano per-save.
+  // Il diario mantiene la compatibilità con i backup precedenti a progress.
+  // Il confronto temporale evita che una vecchia risposta del diario copra
+  // un errore appena commesso nel Libero (o una correzione successiva).
+  function _rankedUltimiEsiti() {
+    const ultimi = new Map();
+    function aggiungi(r, data) {
+      if (!r.quiz_id || r.mode === 'sync' || typeof r.corretta !== 'boolean') return;
+      const ts = Number(r.timestamp || r.ts) || Date.parse(data || '1970-01-01') || 0;
+      const prima = ultimi.get(r.quiz_id);
+      if (!prima || ts >= prima.ts) ultimi.set(r.quiz_id, { corretta: r.corretta, ts });
     }
-    // Set di quiz_id con ultimo esito errato (no filtro piano ancora)
+    for (const [data, day] of Object.entries(carCaricaDiario()).sort(([a], [b]) => a.localeCompare(b))) {
+      for (const r of day?.risposte || []) aggiungi(r, data);
+    }
+    for (const r of caricaProgress().risposte || []) aggiungi(r);
+    return ultimi;
+  }
+
+  function _rankedErroriRecuperabili() {
+    const ultimoEsito = _rankedUltimiEsiti();
+    const ultimaTsErrato = {};
     const candidatiIds = new Set();
-    for (const id in ultimoEsito) {
-      if (!ultimoEsito[id].corretta) candidatiIds.add(id);
+    for (const [id, esito] of ultimoEsito) {
+      if (!esito.corretta) {
+        candidatiIds.add(id);
+        ultimaTsErrato[id] = esito.ts;
+      }
     }
     if (candidatiIds.size === 0) {
       return { ids: new Set(), perMateria: new Map(), totale: 0, pool: [] };

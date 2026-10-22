@@ -479,6 +479,7 @@
       const bandiSelezionati = new Set();
       const SK_SCHEMI_PESI = 'cm:schemi-pesi';
       let schemaSelezionato = '';
+      let nomeSchema = '';
       const schemi = () => caricaDaStorage(SK_SCHEMI_PESI) || [];
       function _idsBandi() {
         return [...new Set(catalogoBandi.filter(b => bandiSelezionati.has(b.id))
@@ -770,7 +771,7 @@
               <label>Schema salvato <select id="wizSchemi"><option value="">Scegli uno schema</option>${schemi().map(s => `<option value="${_esc(s.id)}" ${s.id === schemaSelezionato ? 'selected' : ''}>${_esc(s.nome)}</option>`).join('')}</select></label>
               <button class="btn btn-ghost btn-sm" id="wizSchemaCarica">Carica schema</button>
               <button class="btn btn-ghost btn-sm" id="wizSchemaElimina">Elimina schema</button>
-              <label>Nome schema <input id="wizSchemaNome" placeholder="Es. Inglese e logica"></label>
+              <label>Nome schema <input id="wizSchemaNome" value="${_esc(nomeSchema)}" placeholder="Es. Inglese e logica"></label>
               <button class="btn btn-ghost btn-sm" id="wizSchemaSalva">Salva schema</button>
               <div class="wiz-hint">Gli schemi conservano materie, bandi, argomenti esclusi e percentuali. Non cambiano RP o storico.</div>
             </div>
@@ -831,6 +832,8 @@
         const scrollInterni = ['.wiz-rows', '.wiz-weight-list'].map(selector => ({ selector, y: main.querySelector(selector)?.scrollTop || 0 }));
         const nome = document.getElementById('wizNome');
         if (nome) nomeScelto = nome.value;
+        const schemaNome = document.getElementById('wizSchemaNome');
+        if (schemaNome) nomeSchema = schemaNome.value;
         const active = document.activeElement;
         const attr = ['data-mat', 'data-arg', 'data-wiz-peso', 'data-wiz-bando'].find(a => active && active.hasAttribute(a));
         const focus = attr ? `${active.tagName.toLowerCase()}[${attr}="${CSS.escape(active.getAttribute(attr))}"]` : null;
@@ -983,7 +986,11 @@
           if (lista.some(s => s.nome.toLowerCase() === nome.toLowerCase())) { toast('Nome già usato: scegli un altro nome o elimina lo schema precedente', true); return; }
           const id = 'schema_' + Date.now().toString(36);
           lista.push({ id, nome, piano: _pianoCorrente() });
-          salvaInStorage(SK_SCHEMI_PESI, lista); schemaSelezionato = id;
+          if (!salvaInStorage(SK_SCHEMI_PESI, lista)) {
+            toast('Schema non salvato: spazio di archiviazione non disponibile. Esporta un backup dalle Impostazioni.', true);
+            return;
+          }
+          schemaSelezionato = id;
           toast('Schema salvato'); render();
         });
         document.getElementById('wizSchemaCarica')?.addEventListener('click', () => {
@@ -1003,16 +1010,23 @@
         document.getElementById('wizSchemaElimina')?.addEventListener('click', () => {
           if (!schemaSelezionato) return;
           showModal('Eliminare lo schema?', 'Il piano e i progressi non saranno modificati.', () => {
-            salvaInStorage(SK_SCHEMI_PESI, schemi().filter(s => s.id !== schemaSelezionato));
+            if (!salvaInStorage(SK_SCHEMI_PESI, schemi().filter(s => s.id !== schemaSelezionato))) {
+              toast('Impossibile eliminare lo schema: archiviazione non disponibile', true); return;
+            }
             schemaSelezionato = ''; render();
           });
         });
         const bRiapplica = document.getElementById('wizRiapplicaBando');
         if (bRiapplica) bRiapplica.addEventListener('click', () => _applicaBando(bandoRiapplicabile));
         document.querySelectorAll('[data-wiz-peso]').forEach(input => {
+          input.addEventListener('input', () => {
+            _impostaPercentuale(input.dataset.wizPeso, input.value);
+            _aggiornaComposizione();
+          });
           input.addEventListener('change', () => {
             _impostaPercentuale(input.dataset.wizPeso, input.value);
-            render();
+            input.value = composizione[input.dataset.wizPeso].toFixed(1);
+            _aggiornaComposizione();
           });
         });
         const bPesiPreset = document.getElementById('wizPesiPreset');
@@ -1027,6 +1041,20 @@
           render();
         });
         _aggiornaWizCount();
+      }
+
+      // Non sostituire i controlli durante input/blur: il click sul pulsante
+      // successivo deve arrivare allo stesso elemento su cui è iniziato.
+      function _aggiornaComposizione() {
+        const totale = [...sel].reduce((n, id) => n + (Number(composizione[id]) || 0), 0);
+        const el = document.getElementById('wizPesoTotale');
+        if (el) el.textContent = totale.toFixed(1) + '%';
+        const quote40 = typeof ripartisciProporzionale === 'function' ? ripartisciProporzionale(40, composizione) : {};
+        main.querySelectorAll('[data-wiz-peso]').forEach(input => {
+          const mid = input.dataset.wizPeso, row = input.closest('.wiz-weight-row');
+          row.querySelector('.wiz-weight-bar i').style.width = (composizione[mid] || 0) + '%';
+          row.querySelector('.wiz-weight-preview').textContent = (quote40[mid] || 0) + ' / 40 quiz';
+        });
       }
 
       function _aggiornaWizCount() {
@@ -1092,7 +1120,10 @@
           // bandoIdSelezionato riflette sempre lo stato corrente del wizard
           // (invariato se l'utente non ha toccato la vista "Piano Bandi",
           // aggiornato se ha applicato un preset diverso).
-          SavesCore.aggiornaPianoSave(editingId, pianoOut, bandoIdSelezionato);
+          if (!SavesCore.aggiornaPianoSave(editingId, pianoOut, bandoIdSelezionato)) {
+            toast('Piano non salvato: archiviazione non disponibile. Esporta un backup dalle Impostazioni.', true);
+            return;
+          }
           toast('Piano aggiornato: ' + saveEsistente.nome);
           aggiornaTopbarSaveChip();
           navigaA(returnPage);

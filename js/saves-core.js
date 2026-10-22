@@ -83,7 +83,7 @@
       return _origCarica(SK_SAVES_LISTA) || [];
     }
     function _salvaListaSaves(lista) {
-      _origSalva(SK_SAVES_LISTA, lista);
+      return _origSalva(SK_SAVES_LISTA, lista);
     }
     function getSaveAttivoId() { return _activeSaveId; }
     function getSaveAttivo() {
@@ -170,8 +170,7 @@
       if (!s) return false;
       s.piano = piano || { materieIds: [] };
       if (bandoId !== undefined) s.bandoId = bandoId;
-      _salvaListaSaves(lista);
-      return true;
+      return _salvaListaSaves(lista);
     }
 
     function duplicaSave(id, nuovoNome) {

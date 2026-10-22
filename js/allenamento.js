@@ -67,13 +67,18 @@
     argomentiEspansi:   new Set(),
   };
   const SK_LIB_CONFIG = 'cm:libero:config';
-  const libSalvata = caricaDaStorage(SK_LIB_CONFIG);
-  if (libSalvata) {
-    for (const key of ['nQuiz','pool','modalita','timerMode','ordine','saltaPadron','bandiIds','composizione','argomentiEsclusi']) {
-      if (libSalvata[key] !== undefined) CONFIG[key] = libSalvata[key];
+  function _libCaricaConfig() {
+    const libSalvata = caricaDaStorage(SK_LIB_CONFIG);
+    if (libSalvata) {
+      for (const key of ['nQuiz','pool','modalita','timerMode','timerMinuti','ordine','saltaPadron','bandiIds','composizione','argomentiEsclusi']) {
+        if (libSalvata[key] !== undefined) CONFIG[key] = libSalvata[key];
+      }
+      CONFIG.nodiSelezionati = new Set(libSalvata.nodiSelezionati || []);
     }
-    CONFIG.nodiSelezionati = new Set(libSalvata.nodiSelezionati || []);
   }
+  // Sul desktop SQLite viene ripristinato in modo asincrono. Come init(),
+  // attendiamo il ripristino prima di leggere la configurazione salvata.
+  (window.__storageReady || Promise.resolve()).then(_libCaricaConfig);
   function _libSalvaConfig() {
     salvaInStorage(SK_LIB_CONFIG, { ...CONFIG, nodiSelezionati: [...CONFIG.nodiSelezionati], materieSelezionate: [], argomentiEspansi: [] });
   }
@@ -234,10 +239,10 @@
       </div>
 
       <div class="lib-summary">
-        <div class="summary-info">
+        <div class="summary-info" id="libRiepilogo">
           Pronto a pescare <span class="num">${quizPescati}</span> quiz · pool disponibile: <strong>${quizPool.length}</strong>
         </div>
-        <button class="btn btn-primary" onclick="avviaBatteria()" ${pronto ? '' : 'disabled style="opacity:0.4;cursor:not-allowed"'}>
+        <button class="btn btn-primary" id="libAvviaBatteria" onclick="avviaBatteria()" ${pronto ? '' : 'disabled style="opacity:0.4;cursor:not-allowed"'}>
           ▶ Avvia batteria mix
         </button>
       </div>
@@ -633,7 +638,12 @@
     CONFIG.nQuiz = Math.max(1, parseInt(n) || 1);
     const inp = document.getElementById('nQuizInput');
     if (inp) inp.value = CONFIG.nQuiz;
-    refreshConfigUI();
+    _libSalvaConfig();
+    const pool = _libQuizDisponibili().length, pescati = Math.min(CONFIG.nQuiz, pool);
+    const riepilogo = document.getElementById('libRiepilogo');
+    if (riepilogo) riepilogo.innerHTML = `Pronto a pescare <span class="num">${pescati}</span> quiz · pool disponibile: <strong>${pool}</strong>`;
+    const avvia = document.getElementById('libAvviaBatteria');
+    if (avvia) { avvia.disabled = pescati === 0; avvia.style.opacity = pescati ? '' : '0.4'; avvia.style.cursor = pescati ? '' : 'not-allowed'; }
   }
   function setTimerMode(m) { CONFIG.timerMode = m; refreshConfigUI(); }
   function setOrdine(o)    { CONFIG.ordine = o; refreshConfigUI(); }

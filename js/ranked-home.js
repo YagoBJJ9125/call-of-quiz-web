@@ -466,7 +466,7 @@
 
           <div class="rk-recap-card rk-deboli">
             <div class="rk-recap-h" title="Quiz e materie su cui dovresti concentrarti per consolidare le aree deboli">Da recuperare</div>
-            <div class="rk-errori-box ${nErrori > 0 ? 'has-err' : ''}" title="Quiz la cui ultima risposta è stata sbagliata e che non sono ancora padroneggiati. Vengono ripresentati con priorità nei prossimi round (fino al 55%).">
+            <div class="rk-errori-box ${nErrori > 0 ? 'has-err' : ''}" title="Errori del piano attuale, anche dall’Allenamento Libero: conta l’ultima risposta reale. Riproposti con priorità nei round; il recupero esplicito non modifica l’accuratezza.">
               <span class="rk-errori-num">${nErrori.toLocaleString('it-IT')}</span>
               <span class="rk-errori-lbl">quiz sbagliati da ripadroneggiare</span>
             </div>
