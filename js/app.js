@@ -25,6 +25,7 @@
   }
 
   async function init() {
+    _libCaricaConfig();
     _mostraVersione();
     // Mostra un loader nella main area mentre carica
     document.getElementById('main').innerHTML = `
@@ -55,6 +56,7 @@
       // migrato o appena creato vuoto), gli diamo TUTTE le materie del
       // pacchetto come default. L'utente può poi restringerlo a piacere.
       if (window.SavesCore && caricato) {
+        await CMSpaced.inizializza();
         try { window.SavesCore.popolaPianoDefaultSeVuoto(); }
         catch (e) { console.warn('popolaPianoDefaultSeVuoto:', e); }
         // Aggiunge ai piani già popolati le materie introdotte con gli update
@@ -70,6 +72,7 @@
       }
     } catch (err) {
       console.error('Errore init:', err);
+      if (window.CMStorage?.status().error) throw err;
       renderEmptyState();
       toast('Errore caricamento pacchetto: ' + err.message, true);
     }
@@ -198,4 +201,10 @@
   // Su web __storageReady è già risolta (Promise.resolve), quindi parte subito.
   (window.__storageReady || Promise.resolve())
     .then(init)
-    .catch((e) => { console.error('storage bootstrap fallito, avvio comunque:', e); init(); });
+    .catch((e) => {
+      console.error('Archiviazione non inizializzata:', e);
+      document.getElementById('main').innerHTML = '<div role="alert"><h1>Archiviazione non disponibile</h1><p>Avvio sospeso per non sovrascrivere i dati esistenti. Riprova o esporta la copia locale recuperabile.</p><p id="storageBootReason"></p><button id="storageBootRetry">Riprova</button><button id="storageBootBackup">Esporta copia locale</button></div>';
+      document.getElementById('storageBootReason').textContent = e.message;
+      document.getElementById('storageBootRetry').onclick = () => location.reload();
+      document.getElementById('storageBootBackup').onclick = () => BackupCore.esporta();
+    });

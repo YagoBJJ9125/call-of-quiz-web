@@ -1,33 +1,8 @@
-  // ═══════════════════════════════════════════════════════
-  // RANKED ENGINE — Selezione domande adattiva + hook risposta
-  // ═══════════════════════════════════════════════════════
-  //
-  // Quattro cluster nel pool:
-  //   ERRORI      — l'ultima risposta data è stata sbagliata (anche se il quiz
-  //                 era padroneggiato → regressione). PRIORITÀ MASSIMA: vengono
-  //                 riproposti finché non tornano padroneggiati.
-  //   NUOVI       — mai risposti (nessuna voce in diario)
-  //   REVIEW      — visti, non padroneggiati, ultima risposta corretta
-  //                 (in fase di consolidamento)
-  //   CONSOLIDATI — padroneggiati e non "saturi"
-  //
-  // SATURAZIONE: un quiz padroneggiato e già risposto correttamente molte volte
-  // (≥ RANKED_SATURAZIONE_CORRETTE) va "in riposo": viene escluso dalla selezione
-  // per RANKED_RIPRESA_GG giorni, poi riemerge una volta per un refresh anti-oblio.
-  // Evita che lo stesso quiz facile ricompaia all'infinito.
-  //
-  // Il mix di lega (ranked-core.js) si applica ai cluster NUOVI/REVIEW/CONSOLIDATI;
-  // gli ERRORI hanno una quota prioritaria a parte.
-  // ═══════════════════════════════════════════════════════
+  // Ranked: quote per materia e selezione dei soli ripassi in scadenza.
+  // Lo stato di apprendimento e gli intervalli sono in apprendimento.js.
 
   const RANKED_OVERRIDE_QUOTA       = 0.20;  // % round su materie deboli (sul restante dopo errori)
   const RANKED_ERRORI_QUOTA_MAX     = 0.55;  // max % del round dedicata agli errori aperti
-  const RANKED_SATURAZIONE_CORRETTE = 5;     // corrette totali oltre cui un quiz va "in riposo"
-  const RANKED_RIPRESA_GG           = 21;    // giorni di riposo prima del refresh anti-oblio
-  const RANKED_RECUPERO_COOLDOWN_MIN = 120;  // minuti di attesa prima che un errore rientri
-                                             // nel pool recupero (evita che l'errore appena
-                                             // commesso ricompaia nella batteria successiva)
-
   // — Costruisci pool indicizzato per il selettore —
   // Restituisce { all, perMateria, perId } usabili dal selezionatore
   function rankedCostruisciPool(opts) {
@@ -82,194 +57,64 @@
   }
 
   // — Classifica i quiz del pool in ERRORI / NUOVI / REVIEW / CONSOLIDATI —
-  //   I quiz "saturi" (visti correttamente troppe volte di recente) sono esclusi.
+  //   Esclude tutte le domande già affrontate la cui revisione non è scaduta.
   function rankedClassificaPool(pool) {
-    const padron = carCaricaPadron();
-    const diario = carCaricaDiario();
-    const oggi   = new Date(oggiISO());
-
-    // Finestra di scansione diario: 90 giorni
-    const limite = new Date(oggi);
-    limite.setDate(limite.getDate() - 90);
-    const limiteISO = limite.toISOString().substring(0, 10);
-
-    // Soglia "riposo": un quiz saturo visto entro questi giorni resta escluso
-    const sogliaRipresa = new Date(oggi);
-    sogliaRipresa.setDate(sogliaRipresa.getDate() - RANKED_RIPRESA_GG);
-    const sogliaRipresaISO = sogliaRipresa.toISOString().substring(0, 10);
-
-    // Indice per quiz: { corretteTot, ultimoCorretta, ultimoData }
-    // Itero i giorni in ordine crescente: l'ultima scrittura riflette l'esito più recente.
-    const info = {};
-    const giorni = Object.keys(diario).filter(d => d >= limiteISO).sort();
-    for (const data of giorni) {
-      const day = diario[data];
-      if (!day || !day.risposte) continue;
-      for (const r of day.risposte) {
-        const id = r.quiz_id;
-        if (!id || r.mode === 'sync') continue;
-        if (!info[id]) info[id] = { corretteTot: 0, ultimoCorretta: null, ultimoData: null };
-        if (r.corretta) info[id].corretteTot++;
-        info[id].ultimoCorretta = !!r.corretta;
-        info[id].ultimoData = data;
-      }
-    }
-
-    const ultimiEsiti = _rankedUltimiEsiti();
-    const nuovi = [], errori = [], review = [], consolidati = [];
+    const out = { nuovi: [], errori: [], review: [], consolidati: [] }, now = Date.now();
     for (const item of pool) {
-      const id = item.id;
-      const ultimo = ultimiEsiti.get(id);
-      // Conserva la finestra ordinaria di 90 giorni per i quiz già corretti;
-      // solo gli errori aperti devono riemergere anche dal Libero/archivio.
-      const f = ultimo && (info[id] || !ultimo.corretta) ? {
-        corretteTot: info[id]?.corretteTot || 0,
-        ultimoCorretta: ultimo.corretta,
-        ultimoData: new Date(ultimo.ts).toISOString().substring(0, 10),
-      } : info[id];
-      if (!f) { nuovi.push(item); continue; }   // mai visto
-      const isPadron = èPadroneggiato(padron[id]);
-
-      // 1. ERRORE APERTO: l'ultima risposta è stata sbagliata → priorità massima.
-      //    Vale anche per quiz padroneggiati (regressione = "hai dimenticato").
-      if (f.ultimoCorretta === false) { errori.push(item); continue; }
-
-      // 2. PADRONEGGIATO → OBLIO DIRETTO (v0.7 opzione A):
-      //    saldo ≥ 3 = padroneggiato. Va in riposo per RANKED_RIPRESA_GG giorni
-      //    (escluso dal round). Dopo riemerge UNA volta nel cluster CONSOLIDATI
-      //    per il refresh anti-oblio; se rispondi giusto resta padron e riparte
-      //    il riposo, se sbagli scende sotto soglia e torna in rotazione normale.
-      if (isPadron) {
-        if (f.ultimoData >= sogliaRipresaISO) continue;  // ancora in riposo
-        consolidati.push(item);                          // refresh post-riposo
-        continue;
+      const p = CMSpaced.get(item.id);
+      if (!p) out.nuovi.push(item);
+      else if (p.prossimo <= now) {
+        if (p.erroreAperto) out.errori.push(item);
+        else if (p.ripassi >= 3) out.consolidati.push(item);
+        else out.review.push(item);
       }
-
-      // 3. REVIEW: visto, non padroneggiato, ultima corretta → consolidamento.
-      review.push(item);
     }
-    return { nuovi, errori, review, consolidati };
+    return out;
   }
 
-  // ═══════════════════════════════════════════════════════
-  // ERRORI "RECUPERABILI" — Fonte UNICA di verità (Fase 10.1)
-  // ═══════════════════════════════════════════════════════
-  // Questo helper centralizza la definizione di "errore da recuperare" usata
-  // OVUNQUE (badge "39 sbagliati", bottone "Recupera N errori", contatori
-  // per-materia, esecuzione batteria). Eliminando le 3 logiche divergenti
-  // precedenti, tutti i numeri quadrano alla riga.
-  //
-  // Criteri (in ordine):
-  //   1. Unisce risposte reali globali (anche Libero) e diario del save attivo
-  //   2. Per ogni quiz_id, tiene SOLO l'ultimo esito (ordine cronologico)
-  //   3. Esclude le righe `mode:'sync'` (propagazioni da altri save, non
-  //      rispostete davvero qui)
-  //   4. Mantiene solo i quiz_id con ultimo esito ERRATO
-  //   5. Applica il filtro piano del save attivo (materie + argomenti esclusi)
-  //   6. Verifica che il quiz esista ancora nelle banche dati (no ghost)
-  //
-  // Ritorna:
-  //   {
-  //     ids: Set<quiz_id>,              // tutti gli errori recuperabili
-  //     perMateria: Map<materia, Set>,  // raggruppati per materia
-  //     totale: number,                 // = ids.size
-  //     pool: Array<{quiz,id,materiaId}>, // pronto per costruire SESSIONE
-  //   }
-  // Conoscenza ed errori sono globali; RP e accuratezza restano per-save.
-  // Il diario mantiene la compatibilità con i backup precedenti a progress.
-  // Il confronto temporale evita che una vecchia risposta del diario copra
-  // un errore appena commesso nel Libero (o una correzione successiva).
-  function _rankedUltimiEsiti() {
-    const ultimi = new Map();
-    function aggiungi(r, data) {
-      if (!r.quiz_id || r.mode === 'sync' || typeof r.corretta !== 'boolean') return;
-      const ts = Number(r.timestamp || r.ts) || Date.parse(data || '1970-01-01') || 0;
-      const prima = ultimi.get(r.quiz_id);
-      if (!prima || ts >= prima.ts) ultimi.set(r.quiz_id, { corretta: r.corretta, ts });
-    }
-    for (const [data, day] of Object.entries(carCaricaDiario()).sort(([a], [b]) => a.localeCompare(b))) {
-      for (const r of day?.risposte || []) aggiungi(r, data);
-    }
-    for (const r of caricaProgress().risposte || []) aggiungi(r);
-    return ultimi;
-  }
-
+  // Errori aperti (anche non ancora scaduti) e revisioni in scadenza.
+  // Il contatore li mostra tutti; la batteria pesca solo le scadenze maturate.
   function _rankedErroriRecuperabili() {
-    const ultimoEsito = _rankedUltimiEsiti();
-    const ultimaTsErrato = {};
-    const candidatiIds = new Set();
-    for (const [id, esito] of ultimoEsito) {
-      if (!esito.corretta) {
-        candidatiIds.add(id);
-        ultimaTsErrato[id] = esito.ts;
-      }
+    const pool = (rankedCostruisciPool() || []).filter(p => CMSpaced.stato(CMSpaced.get(p.id)) === 'ripassare');
+    const scaduti = pool.filter(p => CMSpaced.scaduta(p.id));
+    const ids = new Set(pool.map(p => p.id)), perMateria = new Map();
+    for (const p of pool) {
+      if (!perMateria.has(p.materiaId)) perMateria.set(p.materiaId, new Set());
+      perMateria.get(p.materiaId).add(p.id);
     }
-    if (candidatiIds.size === 0) {
-      return { ids: new Set(), perMateria: new Map(), totale: 0, pool: [] };
-    }
-    // Filtro piano + verifica esistenza nelle banche dati: costruisco il pool
-    // ranked (che già applica getFiltroPianoAttivo) e tengo solo quelli che
-    // sono anche tra i candidati.
-    const poolFull = rankedCostruisciPool();
-    if (!poolFull) return { ids: new Set(), perMateria: new Map(), totale: 0, pool: [] };
-    const pool = poolFull.filter(p => candidatiIds.has(p.id));
-    const ids = new Set();
-    const perMateria = new Map();
-    for (const item of pool) {
-      ids.add(item.id);
-      const mid = item.materiaId || '?';
-      if (!perMateria.has(mid)) perMateria.set(mid, new Set());
-      perMateria.get(mid).add(item.id);
-    }
-    return { ids, perMateria, totale: ids.size, pool, ultimaTsErrato };
+    return { pool, scaduti, ids, perMateria, totale: ids.size };
   }
 
-  // — Selezione "Recupero": quiz da ripadroneggiare ─────────────────────
-  // Usa l'helper unico. Opzionalmente restringe a UNA materia.
-  // Il recupero ESPLICITO (l'utente clicca "Recupera N errori") include TUTTI
-  // gli errori recuperabili: il numero deve coincidere con quello mostrato sul
-  // bottone (rankedContaErroriAperti). NON si applica più un cooldown che
-  // escludeva gli errori recenti — prima causava il bug "9 errori contati ma
-  // solo 1 nella batteria" se gli errori erano stati commessi da poco.
-  // Il cooldown resta solo come PRIORITÀ: gli errori "maturi" (più vecchi di
-  // RANKED_RECUPERO_COOLDOWN_MIN) vanno davanti, i recenti dopo — così se
-  // n < totale si parte dai più stagionati, ma nessuno viene escluso.
+  function _rankedOrdinaRipassi(pool) {
+    const records = new Map(pool.map(p => [p.id, CMSpaced.get(p.id)]));
+    return [...pool].sort((a, b) => {
+      const x = records.get(a.id), y = records.get(b.id);
+      return (x?.prossimo || 0) - (y?.prossimo || 0) || (y?.errori || 0) - (x?.errori || 0) || a.id.localeCompare(b.id);
+    });
+  }
+
+  // Ordinamento: prima le revisioni più vecchie; a parità, più errori.
   function rankedSelezionaRecupero(n, opts) {
-    opts = opts || {};
-    const materiaTarget = opts.materiaId || null;
-    const dati = _rankedErroriRecuperabili();
-    let candidati = dati.pool;
-    if (materiaTarget) candidati = candidati.filter(p => p.materiaId === materiaTarget);
-    if (candidati.length === 0) return [];
-
-    const cooldownMs = RANKED_RECUPERO_COOLDOWN_MIN * 60 * 1000;
-    const ora = Date.now();
-    const maturi  = candidati.filter(p => (ora - (dati.ultimaTsErrato[p.id] || 0)) >= cooldownMs);
-    const freschi = candidati.filter(p => (ora - (dati.ultimaTsErrato[p.id] || 0)) <  cooldownMs);
-    shuffle(maturi); shuffle(freschi);
-    const ordinati = maturi.concat(freschi);   // maturi prima, poi recenti — nessuno escluso
-    return ordinati.slice(0, Math.min(n, ordinati.length));
+    const materia = opts?.materiaId;
+    const pool = _rankedErroriRecuperabili().scaduti.filter(p => !materia || p.materiaId === materia);
+    return _rankedOrdinaRipassi(pool).slice(0, Math.max(0, n));
   }
 
-  // — Conta errori "maturi" per cooldown (usato dalla UI per mostrare contatore corretto) —
+  // Numero di revisioni effettivamente in scadenza.
   function rankedContaErroriRecuperabiliMaturi() {
-    const dati = _rankedErroriRecuperabili();
-    const cooldownMs = RANKED_RECUPERO_COOLDOWN_MIN * 60 * 1000;
-    const ora = Date.now();
-    return dati.pool.filter(p => (ora - (dati.ultimaTsErrato[p.id] || 0)) >= cooldownMs).length;
+    return _rankedErroriRecuperabili().scaduti.length;
   }
 
   // — Conta gli "errori aperti recuperabili": usa l'helper unico.
-  //   Ora restituisce ESATTAMENTE lo stesso numero di "Recupera N errori".
+  //   Comprende anche gli errori in attesa della loro prossima revisione.
   function rankedContaErroriAperti() {
     return _rankedErroriRecuperabili().totale;
   }
 
   // — Numero di errori recuperabili per ciascuna materia ─────────────────
   function rankedErroriPerMateria() {
-    const dati = _rankedErroriRecuperabili();
     const out = {};
-    dati.perMateria.forEach((set, mid) => { out[mid] = set.size; });
+    for (const p of _rankedErroriRecuperabili().scaduti) out[p.materiaId] = (out[p.materiaId] || 0) + 1;
     return out;
   }
 
@@ -384,11 +229,11 @@
 
     // ── Priorità 1: errori aperti (fino a RANKED_ERRORI_QUOTA_MAX del round) ──
     const quotaErrori = Math.min(errori.length, Math.round(n * RANKED_ERRORI_QUOTA_MAX));
-    aggiungi(_rankedPescaPesata(errori, quotaErrori));
+    aggiungi(_rankedOrdinaRipassi(errori).slice(0, quotaErrori));
 
     // ── Priorità 2: override materie deboli sul restante ──
     // Pesco solo dai cluster classificati (non dal pool grezzo): così i quiz
-    // "in riposo" per saturazione restano esclusi anche se di materia debole.
+    // in attesa della prossima revisione restano esclusi anche se di materia debole.
     let restante = n - scelti.length;
     const deboli = rankedMaterieDeboli();
     if (deboli.length > 0 && restante > 0) {
@@ -405,8 +250,8 @@
     const tRev   = Math.round(restante * mix[1]);
     const tCons  = restante - tNuovi - tRev;
     aggiungi(_rankedPescaPesata(filtra(nuovi), tNuovi));
-    aggiungi(_rankedPescaPesata(filtra(review), tRev));
-    aggiungi(_rankedPescaPesata(filtra(consolidati), tCons));
+    aggiungi(_rankedOrdinaRipassi(filtra(review)).slice(0, tRev));
+    aggiungi(_rankedOrdinaRipassi(filtra(consolidati)).slice(0, tCons));
 
     // ── Fill-up se sotto target (cluster esauriti) ──
     if (scelti.length < n) {
@@ -456,12 +301,12 @@
     //    errata vale −1 normale. Per i nuovi quiz: +1 / −1.
     const padronPrima = carCaricaPadron()[id] || { saldo: 0, ultimoCorretto: false };
     const eraInRecupero = !!(padronPrima.ultimoTs && padronPrima.ultimoCorretto === false);
-    const saldoPrima = padronPrima.saldo || 0;
+    const consolidatoPrima = èPadroneggiato(padronPrima);
     const padronDopo = carAggiornaPadron(id, corretta, eraInRecupero);
-    if (corretta && saldoPrima < 3 && padronDopo.saldo >= 3) {
-      try { toast('Quiz padroneggiato ✓ va in oblio (anti-ripetizione)'); } catch (e) {}
-    } else if (!corretta && saldoPrima >= 3 && padronDopo.saldo < 3) {
-      try { toast('Quiz uscito dall\'oblio: torna in rotazione normale', true); } catch (e) {}
+    if (corretta && !consolidatoPrima && èPadroneggiato(padronDopo)) {
+      try { toast('Quiz consolidato dopo ripassi distanziati ✓'); } catch (e) {}
+    } else if (!corretta && consolidatoPrima && !èPadroneggiato(padronDopo)) {
+      try { toast('Errore conservato: nuovo ripasso programmato dal giorno seguente', true); } catch (e) {}
     }
 
     // 3) Accumula l'RP del round — NON lo applico al rank adesso.

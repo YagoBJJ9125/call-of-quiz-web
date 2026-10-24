@@ -238,7 +238,8 @@
       .replace(/\r?\n/g, ' ');  // newline → spazio
   }
 
-  function rispondiQuiz(risposta) {
+  async function rispondiQuiz(risposta) {
+    const contenitore = document.querySelector('.quiz-session');
     const q = SESSIONE.quiz[SESSIONE.iCorrente];
     if (q._risposta_data !== null && q._risposta_data !== 'SKIP') return;
     q._risposta_data = risposta;
@@ -273,6 +274,9 @@
       } else if (typeof liberoHookRisposta === 'function') {
         liberoHookRisposta(q, risposta, q._corretta);
       }
+      contenitore?.querySelectorAll('button').forEach(btn => { btn.disabled = true; });
+      await confermaSalvataggio();
+      if (contenitore && !contenitore.isConnected) return;
     }
 
     if (SESSIONE.config.modalita === 'esame') {
@@ -290,6 +294,9 @@
   }
 
   function quizAvanti() {
+    if (window.CMStorage && (CMStorage.status().pending || CMStorage.status().error)) {
+      toast('Completa il salvataggio della risposta prima di proseguire', true); return;
+    }
     // Simulazione: avanzamento lineare. Le "non risposte" sono ammesse e
     // contano nel punteggio: nessun recupero forzato dei saltati. A fine lista
     // si consegna la preselettiva.
@@ -409,7 +416,8 @@
 
   // ═══════ Termina e risultati ═══════
 
-  function terminaBatteria(confermaUtente) {
+  async function terminaBatteria(confermaUtente) {
+    const contenitore = document.querySelector('.quiz-session');
     // Simulazione d'esame: ramo isolato. Consegna → calcolo voto via SimEngine.
     if (SESSIONE.config && SESSIONE.config._simulazione) {
       if (confermaUtente && !SESSIONE.terminata) {
@@ -451,6 +459,8 @@
       return;
     }
 
+    if (SESSIONE._fineInCorso) return;
+    SESSIONE._fineInCorso = true;
     SESSIONE.terminata  = true;
     if (SESSIONE.timerInterval) clearInterval(SESSIONE.timerInterval);
     SESSIONE.tempoTotale = Math.floor((Date.now() - SESSIONE.timerStart) / 1000);
@@ -466,6 +476,7 @@
       // alcun movimento del rank. Idempotente.
       rankedHookFineRound(tuttiFatti);
       if (!tuttiFatti) {
+        await confermaSalvataggio();
         navigaA('ranked');
         aggiornaNavSidebar('ranked');
         return;
@@ -488,8 +499,9 @@
       tempo:     SESSIONE.tempoTotale,
     });
     salvaProgress(progress);
+    await confermaSalvataggio();
 
-    renderRisultati();
+    if (!contenitore || contenitore.isConnected) renderRisultati();
   }
 
   function renderRisultati() {

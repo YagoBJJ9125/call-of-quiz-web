@@ -21,7 +21,7 @@
   const CAR_PRESET = {
     esplorativo: { nome: 'Esplorativo', mult: 1, criterio: 'visto_1',         desc: 'Vedere tutti i quiz unici almeno una volta' },
     solido:      { nome: 'Solido',      mult: 2, criterio: 'visto_2',         desc: 'Ogni quiz unico visto 2 volte in giorni diversi' },
-    padronanza:  { nome: 'Padronanza',  mult: 3, criterio: 'padroneggiato_3', desc: 'Padroneggiare ogni quiz (3 risposte corrette in giorni diversi)' }
+    padronanza:  { nome: 'Padronanza',  mult: 3, criterio: 'padroneggiato_3', desc: 'Consolidare ogni quiz con almeno tre ripassi corretti distanziati' }
   };
 
   // — Rank —
@@ -126,6 +126,7 @@
     let modificato = false;
     for (const id in raw) {
       const p = raw[id];
+      if (p && typeof CMSpaced !== 'undefined') p.srsConsolidato = CMSpaced.consolidato(id);
       if (p && typeof p === 'object' && typeof p.saldo !== 'number') {
         const gg = (p.giorniCorretti || []).length;
         p.saldo = Math.min(3, gg);     // approssimazione: cap a +3 (= padroneggiato)
@@ -146,6 +147,7 @@
   const PADRON_SOGLIA = 3;
   function èPadroneggiato(p) {
     if (!p) return false;
+    if (typeof CMSpaced !== 'undefined') return !!p.srsConsolidato;
     if (typeof p.saldo === 'number') return p.saldo >= PADRON_SOGLIA;
     // fallback su modello legacy se per qualche motivo non migrato
     return (p.giorniCorretti || []).length >= PADRON_SOGLIA;
@@ -157,6 +159,7 @@
   //   premia il recupero). Una risposta errata in recupero vale comunque −1.
   //   Idempotente: NON deduplica per ts/sessione, accetta il chiamante.
   function carAggiornaPadron(quizId, corretta, eraInRecupero) {
+    if (typeof CMSpaced !== 'undefined') CMSpaced.registra(quizId, corretta);
     const padron = carCaricaPadron();
     const p = padron[quizId] || { saldo: 0, ultimoTs: 0, ultimoCorretto: false, daRecupero: false };
     if (corretta) {
@@ -170,6 +173,7 @@
     p.ultimoTs = Date.now();
     p.ultimoCorretto = !!corretta;
     p.daRecupero = !corretta;       // se sbaglio → diventa errore "da recuperare"
+    if (typeof CMSpaced !== 'undefined') p.srsConsolidato = CMSpaced.consolidato(quizId);
     padron[quizId] = p;
     carSalvaPadron(padron);
     return p;

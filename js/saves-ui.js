@@ -978,7 +978,8 @@
           composizione = _normalizzaComposizione(composizione, [...sel]); render();
         });
         document.getElementById('wizSchemi')?.addEventListener('change', e => { schemaSelezionato = e.target.value; });
-        document.getElementById('wizSchemaSalva')?.addEventListener('click', () => {
+        document.getElementById('wizSchemaSalva')?.addEventListener('click', async e => {
+          const pulsante = e.currentTarget;
           const nome = document.getElementById('wizSchemaNome').value.trim();
           if (!nome) { toast('Dai un nome allo schema', true); return; }
           if (!_percentualiValide()) return;
@@ -991,7 +992,8 @@
             return;
           }
           schemaSelezionato = id;
-          toast('Schema salvato'); render();
+          if (!await _attendiSalvataggio(pulsante)) return;
+          toast('Schema salvato'); if (pulsante.isConnected) render();
         });
         document.getElementById('wizSchemaCarica')?.addEventListener('click', () => {
           const schema = schemi().find(s => s.id === schemaSelezionato);
@@ -1009,10 +1011,11 @@
         });
         document.getElementById('wizSchemaElimina')?.addEventListener('click', () => {
           if (!schemaSelezionato) return;
-          showModal('Eliminare lo schema?', 'Il piano e i progressi non saranno modificati.', () => {
+          showModal('Eliminare lo schema?', 'Il piano e i progressi non saranno modificati.', async () => {
             if (!salvaInStorage(SK_SCHEMI_PESI, schemi().filter(s => s.id !== schemaSelezionato))) {
               toast('Impossibile eliminare lo schema: archiviazione non disponibile', true); return;
             }
+            if (!await confermaSalvataggio()) return;
             schemaSelezionato = ''; render();
           });
         });
@@ -1110,7 +1113,15 @@
         [...sel].forEach(mid => { pianoOut.composizione[mid] = Number((composizione[mid] || 0).toFixed(4)); });
         return pianoOut;
       }
-      function _onConferma() {
+      let creazioneInAttesa = null;
+      async function _attendiSalvataggio(pulsante) {
+        const testo = pulsante?.textContent;
+        if (pulsante) { pulsante.disabled = true; pulsante.textContent = 'Salvataggio…'; }
+        try { return await confermaSalvataggio(); }
+        finally { if (pulsante?.isConnected) { pulsante.disabled = false; pulsante.textContent = testo; } }
+      }
+      async function _onConferma() {
+        const pulsante = document.getElementById('wizConferma');
         if (sel.size === 0) { toast('Seleziona almeno una materia', true); return; }
         if (!_percentualiValide()) return;
         const pianoOut = _pianoCorrente();
@@ -1124,9 +1135,10 @@
             toast('Piano non salvato: archiviazione non disponibile. Esporta un backup dalle Impostazioni.', true);
             return;
           }
+          if (!await _attendiSalvataggio(pulsante)) return;
           toast('Piano aggiornato: ' + saveEsistente.nome);
           aggiornaTopbarSaveChip();
-          navigaA(returnPage);
+          if (pulsante.isConnected) navigaA(returnPage);
           return;
         }
 
@@ -1144,7 +1156,7 @@
         const descrPezzi = [`${sel.size} materie`, `${totQuizPiano.toLocaleString('it-IT')} quiz`];
         if (totEscl > 0) descrPezzi.push(`${totEscl} arg. esclusi`);
 
-        const nuovo = SavesCore.creaSave({
+        const nuovo = creazioneInAttesa || SavesCore.creaSave({
           nome,
           descrizione: descrPezzi.join(' · '),
           piano: pianoOut,
@@ -1152,6 +1164,8 @@
           bandoId: bandoIdSelezionato,
         });
 
+        creazioneInAttesa = nuovo;
+        SavesCore.aggiornaPianoSave(nuovo.id, pianoOut, bandoIdSelezionato);
         SavesCore.caricaSave(nuovo.id);
         if (subIniziale > 0 && typeof rankedSalvaStato === 'function') {
           rankedSalvaStato({
@@ -1163,9 +1177,10 @@
             ultimoGiornoAttivo: null,
           });
         }
+        if (!await _attendiSalvataggio(pulsante)) return;
         toast('Save creato: ' + nome);
         aggiornaTopbarSaveChip();
-        navigaA('piani');
+        if (pulsante.isConnected) navigaA('piani');
       }
 
       render();

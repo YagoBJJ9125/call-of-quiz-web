@@ -16,34 +16,27 @@
   // figura/immagine/grafico che l'app non può mostrare. Questi quiz vengono
   // esclusi da tutti i pool (Ranked + Libero) per evitare risposte impossibili.
   function quizRichiedeImmagine(quiz) {
-    // Se il quiz HA le immagini, l'app le mostra: non va mai escluso.
-    // (Le banche aggiornate includono le immagini dei quiz di logica; senza
-    // questo check i quiz con figura venivano esclusi anche quando la figura
-    // era disponibile, mentre i vecchi doppioni SENZA figura passavano.)
-    if (Array.isArray(quiz.immagini) && quiz.immagini.length > 0) return false;
-    // Domande che citano un'operazione mostrata solo in figura (residui della
-    // vecchia banca senza immagini): senza numeri nel testo sono irrisolvibili.
-    const dom = quiz.domanda || quiz.testo || '';
-    if (/(?:della|la) seguente operazione[.:]?\s*$/i.test(dom.trim()) && !/\d/.test(dom)) return true;
-    const PATTERN = [
-      /nell['’\s]?immagin/i,
-      /nella figura/i, /dalla figura/i, /osserva la figura/i, /vedi la figura/i,
-      /in figura/i, /la figura (mostra|indica|rappresenta|di seguito|sotto|sopra|a lato)/i,
-      /nel grafico/i, /dal grafico/i, /il grafico (mostra|indica|rappresenta)/i,
-      /nel disegno/i, /nel diagramma/i, /nello schema/i,
-      /l['’]area (colorata|ombreggiata|evidenziata|grigia|tratteggiata)/i,
-      /la parte (colorata|ombreggiata|evidenziata|grigia|tratteggiata)/i,
-      /porzione (colorata|ombreggiata|grigia|evidenziata|tratteggiata)/i,
-      /area (colorata|ombreggiata|grigia|evidenziata|tratteggiata) (del|di|nel)/i,
-      /come (mostrato|indicato|illustrato|visibile) (nella|in|dal|nell['’])/i,
-      /\[immagine\]/i, /\[figura\]/i, /\[grafico\]/i, /\[img\]/i,
-      /si (osserva|vede|nota) (nella|in) figura/i,
-      /con riferimento (alla|all['’]) figura/i,
-    ];
+    if (Array.isArray(quiz.immagini) && quiz.immagini.length) return false;
     const domanda = quiz.domanda || quiz.testo || '';
-    const opzioni = (quiz.opzioni || []).map(o => typeof o === 'string' ? o : (o.testo || '')).join(' ');
-    const testo = domanda + ' ' + opzioni;
-    return PATTERN.some(p => p.test(testo));
+    // Nei brani di comprensione conta la richiesta finale, non la descrizione
+    // di immagini all'interno del testo da leggere.
+    const richiesta = domanda.includes('---') ? domanda.split(/-{3,}/).pop() : domanda;
+    if (/(?:della|la) seguente operazione[.:]?\s*$/i.test(richiesta.trim()) && !/\d/.test(richiesta)) return true;
+    const testo = richiesta + ' ' + (quiz.opzioni || []).map(o => typeof o === 'string' ? o : o.testo || '').join(' ');
+    const patterns = [
+      /\b(?:osserva|osservando|vedi|esamina|guarda)\s+(?:la |l['’])?(?:figura|immagine|grafico|disegno|diagramma)\b/i,
+      /\b(?:nella|dalla|in) figura\b(?!\s+(?:di|del|della|dei|degli|delle)\b)/i,
+      /\b(?:figura|immagine|grafico|disegno|diagramma|schema)\b\s+(?:seguente|sottostante|sopra|sotto|qui|a lato|riportat[oa]|illustrat[oa]|mostrat[oa])/i,
+      /\bla figura\b\s+(?:mostra|indica|rappresenta)/i,
+      /\b(?:il grafico|il diagramma)\b\s+(?:mostra|indica|rappresenta)/i,
+      /l['’]area (?:colorata|ombreggiata|evidenziata|grigia|tratteggiata)/i,
+      /(?:la parte|porzione) (?:colorata|ombreggiata|evidenziata|grigia|tratteggiata)/i,
+      /area (?:colorata|ombreggiata|grigia|evidenziata|tratteggiata) (?:del|di|nel)/i,
+      /come (?:mostrato|indicato|illustrato|visibile) (?:nella|in|dal|nell['’])\s*(?:figura|immagine|grafico|diagramma)/i,
+      /\[(?:immagine|figura|grafico|img)\]/i,
+      /con riferimento (?:alla|all['’]) figura\b(?!\s+(?:di|del|della|dei|degli|delle)\b)/i,
+    ];
+    return patterns.some(p => p.test(testo));
   }
   window.quizRichiedeImmagine = quizRichiedeImmagine;
 
@@ -78,7 +71,7 @@
   }
   // Sul desktop SQLite viene ripristinato in modo asincrono. Come init(),
   // attendiamo il ripristino prima di leggere la configurazione salvata.
-  (window.__storageReady || Promise.resolve()).then(_libCaricaConfig);
+  // Chiamata da init(), dopo anche l'eventuale ripristino cloud.
   function _libSalvaConfig() {
     salvaInStorage(SK_LIB_CONFIG, { ...CONFIG, nodiSelezionati: [...CONFIG.nodiSelezionati], materieSelezionate: [], argomentiEspansi: [] });
   }
@@ -119,7 +112,7 @@
     salvaInStorage(SK_PROGRESS, p);
   }
   function quizId(q) {
-    return (q.materia || '?') + '::' + (q.domanda || '').substring(0, 80);
+    return CMQuizIdentity.id(q);
   }
   function statoQuiz(quiz, progress) {
     const id    = quizId(quiz);
@@ -188,6 +181,7 @@
         <div class="config-card">
           <div class="config-card-title">Pool quiz</div>
           <div class="option-pills">
+            <div class="pill ${CONFIG.pool === 'ripasso'   ? 'active' : ''}" onclick="setPool('ripasso')">Ripassi in scadenza</div>
             <div class="pill ${CONFIG.pool === 'tutti'     ? 'active' : ''}" onclick="setPool('tutti')">Tutti</div>
             <div class="pill ${CONFIG.pool === 'mai_visti' ? 'active' : ''}" onclick="setPool('mai_visti')">Mai visti</div>
             <div class="pill ${CONFIG.pool === 'errati'    ? 'active' : ''}" onclick="setPool('errati')">Solo errati</div>
@@ -705,6 +699,7 @@
         const stato = statoQuiz(q, progress);
         if (CONFIG.pool === 'mai_visti' && stato !== 'mai_visto') continue;
         if (CONFIG.pool === 'errati'    && stato !== 'errato')    continue;
+        if (CONFIG.pool === 'ripasso'   && !CMSpaced.scaduta(id)) continue;
         if (CONFIG.pool === 'mix'       && stato === 'corretto')  continue;
         result.push({ ...q, _materia_id: m.materia_id });
       }
@@ -744,7 +739,7 @@
     }
 
     SESSIONE = {
-      config: { ...CONFIG, nodiSelezionati: new Set(CONFIG.nodiSelezionati), materieSelezionate: new Set() },
+      config: { ...CONFIG, _recupero: CONFIG.pool === 'ripasso', nodiSelezionati: new Set(CONFIG.nodiSelezionati), materieSelezionate: new Set() },
       quiz: pescati.map((q, idx) => ({
         ...q,
         _idx: idx,
@@ -777,10 +772,10 @@
 
     // Padroneggiamento algebrico (GLOBALE): +1 corretto / -1 errato.
     const eraInRecupero = false;
-    const prima = (carCaricaPadron()[id] || {}).saldo || 0;
+    const prima = èPadroneggiato(carCaricaPadron()[id]);
     const dopo  = carAggiornaPadron(id, corretta, eraInRecupero);
-    if (corretta && prima < 3 && dopo.saldo >= 3) {
-      try { toast('Quiz padroneggiato ✓'); } catch (e) {}
+    if (corretta && !prima && èPadroneggiato(dopo)) {
+      try { toast('Quiz consolidato dopo ripassi distanziati ✓'); } catch (e) {}
     }
   }
 

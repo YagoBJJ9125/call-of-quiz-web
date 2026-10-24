@@ -165,8 +165,10 @@
 
 <!-- JS — caricamento in ordine di dipendenza (tutti globali, nessun modulo ES6) -->
 <script src="js/storage.js"></script>
-<!-- Persistenza durevole (Fase 2): NO-OP su web, SQLite su Tauri. Dopo storage.js. -->
-<script src="js/cm-persist.js"></script>
+<script src="js/quiz-identita-registro.js"></script>
+<script src="js/quiz-identita.js"></script>
+<!-- Stato durevole: IndexedDB sul web, transazioni SQLite su Tauri. -->
+<script src="js/durable-storage.js"></script>
 <!-- Save manager (multi-save): monkey-patcha storage.js, deve venire SUBITO dopo -->
 <script src="js/saves-core.js"></script>
 <!-- Composizione proporzionale bando (pescata esatta per materia): usata da Ranked/Allenamento/Simulazione -->
@@ -181,6 +183,7 @@
 <script src="js/nav.js"></script>
 <script src="js/allenamento.js"></script>
 <script src="js/quiz-engine.js"></script>
+<script src="js/apprendimento.js"></script>
 <!-- Helpers storage condivisi con Ranked (padroneggiamento, diario, pesi materie) -->
 <script src="js/carriera-core.js"></script>
 <script src="js/analisi-materie.js"></script>

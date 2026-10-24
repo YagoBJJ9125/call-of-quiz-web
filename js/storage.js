@@ -117,9 +117,18 @@
   }
 
   // localStorage wrapper (per dati piccoli)
+  function storageGetRaw(key) { return window.CMStorage ? CMStorage.get(key) : localStorage.getItem(key); }
+  function storageSetRaw(key, value) { return window.CMStorage ? CMStorage.set(key, value) : localStorage.setItem(key, value); }
+  function storageRemove(key) { return window.CMStorage ? CMStorage.remove(key) : localStorage.removeItem(key); }
+  function storageKeys() { return window.CMStorage ? CMStorage.keys() : Object.keys(localStorage).filter(k => k.startsWith('cm:')); }
+  function storageClear() { storageKeys().forEach(storageRemove); }
+  async function confermaSalvataggio() {
+    try { if (window.CMStorage) await CMStorage.flush(); return true; }
+    catch (_) { toast('Salvataggio non completato. Riprova o esporta un backup; non chiudere l’app.', true); return false; }
+  }
   function salvaInStorage(key, data) {
     try {
-      localStorage.setItem(key, JSON.stringify(data));
+      storageSetRaw(key, JSON.stringify(data));
       return true;
     } catch (e) {
       console.error('localStorage error per', key, ':', e);
@@ -129,7 +138,7 @@
 
   function caricaDaStorage(key) {
     try {
-      const v = localStorage.getItem(key);
+      const v = storageGetRaw(key);
       return v ? JSON.parse(v) : null;
     } catch { return null; }
   }

@@ -75,7 +75,7 @@
             ${_rkiRule('🏅', '7 leghe × 4 livelli', 'Rame → Bronzo → Argento → Oro → Platino → Diamante → Maestro. Ogni lega ha 4 sotto-livelli interni.')}
             ${_rkiRule('🎯', 'Obiettivo giornaliero', 'Un target di quiz al giorno, calcolato sulla data della prova. Completarlo dà bonus RP a fine giornata.')}
             ${_rkiRule('🔥', 'Streak', 'Giorni consecutivi in cui completi l\'obiettivo: più la streak cresce, più bonus RP guadagni.')}
-            ${_rkiRule('⚠', 'Errori in priorità', 'I quiz sbagliati ritornano con priorità nei round successivi finché non li padroneggi: 3 risposte giuste in 3 giorni diversi.')}
+            ${_rkiRule('⚠', 'Errori in priorità', 'Gli errori restano visibili e tornano dal giorno seguente. Il consolidamento richiede tre ripassi corretti alle scadenze previste, non risposte ripetute a pochi minuti di distanza.')}
             ${_rkiRule('📈', 'Difficoltà crescente', 'Ai rank bassi sali in fretta. Ai rank alti la risposta sbagliata pesa più di quella giusta: solo la precisione ti fa salire.')}
           </div>
         </div>
@@ -226,10 +226,31 @@
     const tot = idsInPiano.size;
     return {
       tot, padron, affrontati, tentativi,
+      storicoAmbiguo: [...tentativiPerId.keys()].filter(id => CMQuizIdentity.ambigui.has(id)).length,
       perc: tot > 0 ? padron / tot : 0,
       saveId: sv.id, saveNome: bando ? bando.nome :
         catalogo.filter(b => ((sv.piano?.bandiIds || (sv.bandoId ? [sv.bandoId] : []))).includes(b.id)).map(b => b.nome).join(' + ') || 'Piano Ranked personalizzato',
     };
+  }
+
+  function _rkApprendimentoMaterie() {
+    const scelta = caricaDaStorage('cm:ranked:banca-vista') || 'piano';
+    const bando = (STATE.pacchetto.bandi || []).find(b => b.id === scelta);
+    const filtro = bando ? { quizPassa: mid => bando.piano.materieIds.includes(mid) } : SavesCore.getFiltroPianoAttivo();
+    const righe = [];
+    for (const m of STATE.pacchetto.manifest.moduli) {
+      const ids = new Set();
+      for (const q of STATE.pacchetto.banche[m.materia_id]?.quiz || []) {
+        if (!filtro || filtro.quizPassa(m.materia_id, q.categorizzazione?.argomento_id)) ids.add(quizId(q));
+      }
+      if (ids.size) {
+        const counts = CMSpaced.conta(ids);
+        righe.push(`<div class="srs-materia" data-srs-materia="${escapeAttr(m.materia_id)}"><h3>${escapeHTML(m.nome)}</h3>${CMSpaced.html(counts)}${counts.prossimo ? `<small>Prossimo ripasso programmato: ${new Date(counts.prossimo).toLocaleString('it-IT')}</small>` : ''}</div>`);
+      }
+    }
+    return `<details class="srs-panel" id="rkApprendimento"><summary>Apprendimento per materia — quattro stati</summary>
+      <p>Da studiare: mai affrontate. Da ripassare: errori ancora aperti o revisioni in scadenza. In apprendimento: corrette ma non consolidate. Consolidate: almeno tre ripassi corretti distanziati, senza revisioni scadute.</p>
+      <p>Gli stati sono personali e globali, non dipendono dal filtro temporale dell’accuratezza. Un ripasso anticipato non aumenta il consolidamento. Gli errori sono visibili subito ma riproposti dal giorno seguente.</p>${righe.join('')}</details>`;
   }
 
   function rankedRender() {
@@ -241,11 +262,13 @@
     const stat7  = rankedStatPeriodo(7);
     const stat30 = rankedStatPeriodo(30);
     const deboli = rankedMaterieDeboli();
-    const nErrori = rankedContaErroriAperti();
+    const datiRipassi = _rankedErroriRecuperabili();
+    const nErrori = datiRipassi.totale;
+    const nScaduti = datiRipassi.scaduti.length;
     // Conteggio "errori recuperabili" per materia: stesso criterio di
     // nErrori e di rankedSelezionaRecupero — così i numeri quadrano ovunque.
-    const erroriPerMateria = (typeof rankedErroriPerMateria === 'function')
-      ? rankedErroriPerMateria() : {};
+    const erroriPerMateria = {};
+    for (const p of datiRipassi.scaduti) erroriPerMateria[p.materiaId] = (erroriPerMateria[p.materiaId] || 0) + 1;
     const stato  = rankedCaricaStato();
 
     const corrente = rank.corrente;
@@ -370,6 +393,7 @@
                 ${(STATE.pacchetto.bandi || []).filter(b => b.stato !== 'bozza').map(b => `<option value="${escapeAttr(b.id)}" ${caricaDaStorage('cm:ranked:banca-vista') === b.id ? 'selected' : ''}>${escapeHTML(b.nome)}</option>`).join('')}
               </select></label>
               <div class="wiz-hint">Tentativi reali di tutte le partite e dell’allenamento libero. Cambiare questa vista non cambia il piano Ranked.</div>
+              ${av.storicoAmbiguo ? `<div class="wiz-hint" role="note">${av.storicoAmbiguo} vecchi identificatori raggruppavano domande diverse. Lo storico è conservato, ma non viene attribuito arbitrariamente alle nuove domande distinte; accuratezza e RP storici restano invariati.</div>` : ''}
               <div class="battery-bar" aria-label="${percAff}% affrontato">
                 ${segments}
               </div>
@@ -378,7 +402,7 @@
                 <span class="am-piano-sep">·</span>
                 <span title="Tentativi reali nella banca, incluse ripetizioni e recupero; nessun doppio conteggio tra progress e diario."><strong id="rkBancaTentativi">${(av.tentativi||0).toLocaleString('it-IT')}</strong> risposte totali <em class="rk-dup-note">(con doppioni)</em></span>
                 <span class="am-piano-sep">·</span>
-                <span title="Quiz padroneggiati: risposti correttamente in almeno 3 giorni diversi."><strong>${av.padron.toLocaleString('it-IT')}</strong> / ${av.tot.toLocaleString('it-IT')} padroneggiati</span>
+                <span title="Almeno tre ripassi corretti effettuati alle scadenze previste, senza revisioni arretrate."><strong>${av.padron.toLocaleString('it-IT')}</strong> / ${av.tot.toLocaleString('it-IT')} consolidate</span>
                 <button class="btn btn-ghost btn-rk-dettaglio" id="rk-vai-analisi"
                         title="Apri la mappa delle materie e delle risposte del piano Ranked attivo">🗺 Mappatura piano Ranked</button>
               </div>
@@ -386,6 +410,7 @@
           `;
         })()}
 
+        ${_rkApprendimentoMaterie()}
         <!-- Obiettivo Oggi -->
         <div class="rk-obj-card">
           <div class="rk-obj-head">
@@ -466,16 +491,17 @@
 
           <div class="rk-recap-card rk-deboli">
             <div class="rk-recap-h" title="Quiz e materie su cui dovresti concentrarti per consolidare le aree deboli">Da recuperare</div>
-            <div class="rk-errori-box ${nErrori > 0 ? 'has-err' : ''}" title="Errori del piano attuale, anche dall’Allenamento Libero: conta l’ultima risposta reale. Riproposti con priorità nei round; il recupero esplicito non modifica l’accuratezza.">
+            <div class="rk-errori-box ${nErrori > 0 ? 'has-err' : ''}" title="Errori aperti e revisioni in scadenza del piano attuale, anche dall’Allenamento Libero. Gli errori restano conservati fino a un ripasso corretto alla scadenza; il recupero esplicito non modifica l’accuratezza.">
               <span class="rk-errori-num">${nErrori.toLocaleString('it-IT')}</span>
-              <span class="rk-errori-lbl">quiz sbagliati da ripadroneggiare</span>
+              <span class="rk-errori-lbl">quiz da ripassare: errori e revisioni</span>
             </div>
-            ${nErrori > 0 ? `
+            ${nScaduti > 0 ? `
               <button class="btn btn-primary rk-btn-recupero" id="rk-recupera-tutti"
-                      title="Batteria focalizzata sui tuoi errori. Stesso RP, stessa padronanza di un round normale.">
-                ▶ Recupera ${Math.min(dimRound, nErrori)} errori
+                      title="Batteria sui ripassi in scadenza. Aggiorna RP e apprendimento, non l’accuratezza.">
+                ▶ Ripassa ${Math.min(dimRound, nScaduti)} quiz in scadenza
               </button>
             ` : ''}
+            ${nErrori > nScaduti ? `<div id="rkRipassiInAttesa" class="wiz-hint">${nErrori - nScaduti} errori conservati, con revisione programmata: non vengono riproposti dopo pochi minuti.</div>` : ''}
             ${deboli.length === 0
               ? `<div class="rk-empty-deb">Nessuna materia sotto il 60% 👌</div>`
               : (() => {
@@ -586,8 +612,8 @@
         ⚠ Gli <strong>errori aperti</strong> hanno priorità: occupano fino al
         ${(RANKED_ERRORI_QUOTA_MAX*100).toFixed(0)}% del round finché non li padroneggi.
         Il mix qui sopra si applica ai quiz restanti, con +${(RANKED_OVERRIDE_QUOTA*100).toFixed(0)}%
-        sulle materie deboli. I quiz già visti correttamente ${RANKED_SATURAZIONE_CORRETTE}+ volte
-        vanno temporaneamente "in riposo".
+        sulle materie deboli. Entrano solo errori e revisioni in scadenza:
+        prima revisione dopo 1 giorno, poi 3, 7, 14 giorni e intervalli crescenti.
       </div>
     `;
   }
@@ -638,8 +664,8 @@
     const scelti = rankedSelezionaRecupero(n, { materiaId });
     if (scelti.length === 0) {
       toast(materiaId
-        ? 'Nessun errore aperto su ' + materiaId
-        : 'Nessun errore aperto da recuperare', true);
+        ? 'Nessun ripasso in scadenza su ' + materiaId
+        : 'Nessun ripasso in scadenza: gli errori restano conservati con la loro programmazione', true);
       return;
     }
     SESSIONE = {

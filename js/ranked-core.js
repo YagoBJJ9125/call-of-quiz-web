@@ -798,9 +798,9 @@
 
   // — Reset modalità ranked (azzera tutto, conserva diario+padron) —
   function rankedReset() {
-    localStorage.removeItem(SK_RANKED_PROFILO);
-    localStorage.removeItem(SK_RANKED_STATO);
-    localStorage.removeItem(SK_RANKED_DAILY);
+    storageRemove(SK_RANKED_PROFILO);
+    storageRemove(SK_RANKED_STATO);
+    storageRemove(SK_RANKED_DAILY);
   }
 
   // Expose alcune funzioni per debug/console

@@ -77,13 +77,13 @@
     // ─── Helpers storage ───
     function _loadCorrente() { try { return caricaDaStorage(SK_CORRENTE); } catch (_) { return null; } }
     function _saveCorrente() {
-      if (!SIM) { try { localStorage.removeItem(_resolveK(SK_CORRENTE)); } catch (_) {} return; }
+      if (!SIM) { try { storageRemove(_resolveK(SK_CORRENTE)); } catch (_) {} return; }
       // Serializza senza timer/funzioni
       const clone = JSON.parse(JSON.stringify(SIM, (k, v) => (k.startsWith('_') ? undefined : v)));
       salvaInStorage(SK_CORRENTE, clone);
     }
     function _resolveK(k) { return k; } // chiave globale (no per-save routing necessario)
-    function _clearCorrente() { SIM = null; try { localStorage.removeItem(SK_CORRENTE); } catch (_) {} }
+    function _clearCorrente() { SIM = null; try { storageRemove(SK_CORRENTE); } catch (_) {} }
     function _loadStorico() { return caricaDaStorage(SK_STORICO) || []; }
     function _pushStorico(rec) { const s = _loadStorico(); s.unshift(rec); salvaInStorage(SK_STORICO, s.slice(0, 50)); }
 

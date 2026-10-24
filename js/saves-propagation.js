@@ -28,12 +28,12 @@
     const SK_TRANS_PENDING = 'cm:saves:transizioni_pending';
     function _leggiTransizioniPending() {
       try {
-        const v = localStorage.getItem(SK_TRANS_PENDING);
+        const v = storageGetRaw(SK_TRANS_PENDING);
         return v ? JSON.parse(v) : {};
       } catch (_) { return {}; }
     }
     function _salvaTransizioniPending(map) {
-      try { localStorage.setItem(SK_TRANS_PENDING, JSON.stringify(map)); }
+      try { storageSetRaw(SK_TRANS_PENDING, JSON.stringify(map)); }
       catch (e) { console.warn('[propagation] salva transizioni:', e); }
     }
     function _accumulaTransizione(saveId, tipo, livelloDopo) {

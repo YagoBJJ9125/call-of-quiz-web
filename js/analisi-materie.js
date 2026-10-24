@@ -968,7 +968,7 @@
               <span class="am-piano-sep">·</span>
               <span title="Numero TOTALE di risposte date, inclusi i quiz rivisti più volte (con doppioni)."><strong>${statsGlobali.tentativi.toLocaleString('it-IT')}</strong> risposte totali <em class="am-dup-note">(con doppioni)</em></span>
               <span class="am-piano-sep">·</span>
-              <span title="Quiz che hai risposto correttamente in almeno 3 giorni diversi: si considerano padroneggiati e ricompaiono solo come refresh anti-oblio"><strong>${completamento.padron.toLocaleString('it-IT')}</strong> / ${completamento.tot.toLocaleString('it-IT')} padroneggiati</span>
+              <span title="Almeno tre ripassi corretti alle scadenze previste, senza revisioni arretrate"><strong>${completamento.padron.toLocaleString('it-IT')}</strong> / ${completamento.tot.toLocaleString('it-IT')} consolidate</span>
               <span class="am-piano-sep">·</span>
               <span title="Numero di materie incluse nello scope selezionato (globale = tutte, save = solo quelle del piano)"><strong>${completamento.materieN}</strong> materie ${completamento.scope.type === 'save' ? 'nel save' : 'totali'}</span>
             </div>
@@ -1098,6 +1098,7 @@
         _regNodo(0, m.id, ids, m.nome);
         return {
           id: m.id, nome: m.nome,
+          apprendimento: CMSpaced.conta(ids),
           meta: 'Peso ' + (m.peso || '?') + '/10 · ' + (m.argomenti || []).length + ' argomenti',
           stats: _aggregaStats(ids, statsRisposte),
           espandibile: true,
@@ -1317,6 +1318,7 @@
             ? `<span class="am-node-prec ${cp}" title="${escapeAttr(ttPrec)}">${prec}% ✓</span>`
             : `<span class="am-muted" title="${escapeAttr(ttPrec)}">—</span>`}
         </div>
+        ${nd.apprendimento ? CMSpaced.html(nd.apprendimento) : ''}
         ${lancabile ? `
           <button class="am-node-launch" data-am-launch="${escapeAttr(launchKey)}"
                   title="Avvia un round Ranked sui quiz di questo blocco. Vale come un round normale: contatori e RP si aggiornano.">▶ Avvia quiz</button>

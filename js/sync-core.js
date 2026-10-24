@@ -42,9 +42,9 @@
 
     // Storage di sessione: SEMPRE localStorage diretto (mai instradato nei
     // save, mai dentro i backup → escluso dal payload e preservato al restore).
-    function _leggi(k)    { try { return JSON.parse(localStorage.getItem(k)); } catch (_) { return null; } }
-    function _scrivi(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} }
-    function _togli(k)    { try { localStorage.removeItem(k); } catch (_) {} }
+    function _leggi(k)    { try { return JSON.parse(storageGetRaw(k)); } catch (_) { return null; } }
+    function _scrivi(k, v){ try { storageSetRaw(k, JSON.stringify(v)); } catch (_) {} }
+    function _togli(k)    { try { storageRemove(k); } catch (_) {} }
 
     function sessione() { return _leggi(SK_SESSIONE); }
     function loggato()  { return !!(sessione() && sessione().refresh_token); }
@@ -265,12 +265,12 @@
         const riga = await _scaricaRiga();
         const ultimo = _leggi(SK_ULTIMO);
         if (riga && (!ultimo || riga.updated_at > ultimo.at)) {
-          const sporco = localStorage.getItem(SK_SPORCO) === '1';
+          const sporco = storageGetRaw(SK_SPORCO) === '1';
           await pull({ silenzioso: true });
           if (sporco && typeof toast === 'function') {
             setTimeout(() => toast('⚠ Scaricati i dati più recenti dal cloud: alcune modifiche locali non sincronizzate sono state sostituite.', true), 1500);
           }
-        } else if (localStorage.getItem(SK_SPORCO) === '1') {
+        } else if (storageGetRaw(SK_SPORCO) === '1') {
           push().catch(() => {});
         }
       } catch (e) {
@@ -280,7 +280,7 @@
 
     let _timerDebounce = null;
     function _segnaSporco() {
-      try { localStorage.setItem(SK_SPORCO, '1'); } catch (_) {}
+      try { storageSetRaw(SK_SPORCO, '1'); } catch (_) {}
       if (!loggato()) return;
       clearTimeout(_timerDebounce);
       _timerDebounce = setTimeout(() => { push().catch(e => console.warn('[sync] push:', e.message)); }, DEBOUNCE_MS);
@@ -301,14 +301,14 @@
         window.salvaInStorage = wrapped;
       }
       setInterval(() => {
-        if (loggato() && localStorage.getItem(SK_SPORCO) === '1') {
+        if (loggato() && storageGetRaw(SK_SPORCO) === '1') {
           push().catch(() => {});
         }
       }, PERIODICO_MS);
       // Uscita/passaggio in background: ultimo tentativo di push.
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden' && loggato()
-            && localStorage.getItem(SK_SPORCO) === '1') {
+            && storageGetRaw(SK_SPORCO) === '1') {
           push().catch(() => {});
         }
       });
@@ -318,14 +318,14 @@
     // cm-persist.js definisce __storageReady (Tauri); su web è già risolta.
     window.__storageReady = (window.__storageReady || Promise.resolve())
       .then(bootSync)
-      .then(_avviaAutoPush)
-      .catch(() => {});
+      .then(_avviaAutoPush);
+    window.__storageReady.catch(() => {}); // resta rifiutata per il bootstrap
 
     window.SyncCore = {
       configurato, loggato, utente, sessione,
       registra, accedi, esci, push, pull,
       eliminaAccount, recuperaPassword,
       ultimoSync: () => _leggi(SK_ULTIMO),
-      haModifichePendenti: () => localStorage.getItem(SK_SPORCO) === '1',
+      haModifichePendenti: () => storageGetRaw(SK_SPORCO) === '1',
     };
   })();

@@ -507,8 +507,8 @@
       'Cancellare tutto?',
       'Verranno rimossi pacchetto e progressi dalla memoria del browser. Questa azione è irreversibile.',
       async () => {
-        for (const key of Object.keys(localStorage)) {
-          if (key.startsWith('cm:')) localStorage.removeItem(key);
+        for (const key of storageKeys()) {
+          if (key.startsWith('cm:')) storageRemove(key);
         }
         try { await dbDelAll('cm:'); } catch (e) { console.error('Errore pulizia IndexedDB:', e); }
         location.reload();
@@ -860,7 +860,7 @@
       document.getElementById('set-data-save').onclick = () => {
         const v = document.getElementById('set-data-prova').value;
         if (v) salvaInStorage(SK_DATA_PROVA, v);
-        else localStorage.removeItem(SK_DATA_PROVA);
+        else storageRemove(SK_DATA_PROVA);
         aggiornaCountdown();
         toast('Data prova aggiornata');
         closeModalSettings();
@@ -1032,7 +1032,7 @@
         showModal('Resettare TUTTI i dati?',
           '⚠ <strong>ATTENZIONE</strong>: questa azione cancella TUTTI i dati salvati: banche dati, progressi, save, padroneggiati, diario, RP ranked. Operazione irreversibile. Si raccomanda di esportare prima un backup.',
           async () => {
-            localStorage.clear();
+            if (window.CMStorage) await CMStorage.resetAll(); else storageClear();
             indexedDB.deleteDatabase('concorso_manager_db');
             if (window.CMPersist && window.CMPersist.isTauri) {
               try { await window.CMPersist.flush(); } catch (_) {}

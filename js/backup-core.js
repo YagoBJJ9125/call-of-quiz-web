@@ -27,6 +27,7 @@
 
     // ─── localStorage: dump di tutte le chiavi cm:* ───
     function _dumpLocal() {
+      if (window.CMStorage) return CMStorage.snapshot();
       const out = {};
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
@@ -124,6 +125,9 @@
 
     // ─── Crea oggetto backup completo ───
     async function creaBackup() {
+      // Il backup deve restare disponibile anche se il supporto è guasto:
+      // include la copia in memoria e tutte le scritture ancora in attesa.
+      try { if (window.CMStorage) await CMStorage.flush(); } catch (_) {}
       const isMobile = window.matchMedia
         ? window.matchMedia('(max-width: 768px)').matches
         : (window.innerWidth <= 768);
@@ -204,6 +208,11 @@
       const n = _normalizza(raw);
       if (!n) throw new Error('File di backup non valido o non compatibile');
       const replace = !opts || opts.replace !== false;
+      if (window.CMStorage) {
+        await CMStorage.replace(n.local, !replace);
+        if (n.idb && Object.keys(n.idb).length && !await _restoreIdb(n.idb)) throw new Error('Progressi ripristinati, ma banche dati del backup non ripristinate');
+        return true;
+      }
       if (replace) {
         const toDel = [];
         for (let i = 0; i < localStorage.length; i++) {

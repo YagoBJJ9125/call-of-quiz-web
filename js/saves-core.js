@@ -141,16 +141,15 @@
       // Purge di tutte le chiavi del save in localStorage
       const prefix = 'cm:save:' + id + ':';
       const toRemove = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
+      for (const k of storageKeys()) {
         if (k && k.startsWith(prefix)) toRemove.push(k);
       }
-      toRemove.forEach(k => localStorage.removeItem(k));
+      toRemove.forEach(k => storageRemove(k));
       // Se era l'attivo, switcha al primo disponibile (o nessuno)
       if (_activeSaveId === id) {
         _activeSaveId = nuovaLista[0] ? nuovaLista[0].id : null;
         if (_activeSaveId) _origSalva(SK_SAVES_ATTIVO, _activeSaveId);
-        else localStorage.removeItem(SK_SAVES_ATTIVO);
+        else storageRemove(SK_SAVES_ATTIVO);
       }
       return true;
     }
@@ -196,15 +195,14 @@
 
       // Verifica presenza dati legacy (chi ha già usato l'app prima del multisave)
       const chiaviLegacy = [];
-      PER_SAVE_KEYS.forEach(k => { if (localStorage.getItem(k) !== null) chiaviLegacy.push(k); });
+      PER_SAVE_KEYS.forEach(k => { if (storageGetRaw(k) !== null) chiaviLegacy.push(k); });
 
       if (chiaviLegacy.length > 0) {
         // ── Backup difensivo (rollback manuale in caso di disastro) ──
         const backup = {};
-        for (let i = 0; i < localStorage.length; i++) {
-          const k = localStorage.key(i);
+        for (const k of storageKeys()) {
           if (k && k.startsWith('cm:') && !k.startsWith(SK_BACKUP_PFX)) {
-            try { backup[k] = localStorage.getItem(k); } catch (_) {}
+            try { backup[k] = storageGetRaw(k); } catch (_) {}
           }
         }
         try {
@@ -223,11 +221,11 @@
 
         // ── Sposta chiavi per-save nel namespace del save ──
         chiaviLegacy.forEach(k => {
-          const v = localStorage.getItem(k);
+          const v = storageGetRaw(k);
           if (v !== null) {
             const newKey = 'cm:save:' + save.id + ':' + k.substring(3);
-            localStorage.setItem(newKey, v);
-            localStorage.removeItem(k);
+            storageSetRaw(newKey, v);
+            storageRemove(k);
           }
         });
 

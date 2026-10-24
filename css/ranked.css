@@ -770,6 +770,17 @@
   transition: filter 0.15s ease;
 }
 .rk-banner-btn:hover { filter: brightness(1.12); }
+.srs-panel { margin:18px 0;padding:16px;border:1px solid var(--border-medium);border-radius:10px;background:var(--bg-card); }
+.srs-panel summary { cursor:pointer;font-weight:700; }
+.srs-panel p { font-size:13px;color:var(--text-secondary);line-height:1.5; }
+.srs-materia { border-top:1px solid var(--border-medium);padding:12px 0; }
+.srs-materia h3 { font-size:14px;margin:0 0 8px; }
+.srs-stati { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px; }
+.srs-stati span { display:flex;flex-direction:column;align-items:center;padding:7px 3px;background:rgba(128,160,180,.10);border-radius:6px; }
+.srs-stati strong { font-size:18px; }
+.srs-stati small { font-size:10px;text-align:center;line-height:1.25; }
+.srs-stati [data-srs-stato="ripassare"] strong { color:var(--amber,#ffc46b); }
+.srs-stati [data-srs-stato="consolidate"] strong { color:var(--sage,#81b67d); }
 
 /* ── Picker modal (usato solo per "modifica obiettivo giornaliero") ── */
 .rk-picker { padding: 4px 0; }

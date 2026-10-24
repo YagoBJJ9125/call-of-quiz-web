@@ -21,6 +21,7 @@
       }
     }
 
+    CMQuizIdentity.prepara(banche);
     STATE.pacchetto = { manifest, programma, banche, bandi };
     return true;
   }
@@ -29,6 +30,7 @@
   // Pensato per la distribuzione ai tester: i dati sono sempre quelli del
   // bundle — aggiornati ad ogni rigenerazione — senza importazione manuale.
   function caricaPacchettoDaBundle(bundle) {
+    CMQuizIdentity.prepara(bundle.banche);
     const banche = {};
     for (const mid of Object.keys(bundle.banche || {})) {
       const arr = bundle.banche[mid] || [];
@@ -117,9 +119,9 @@
     if (bandi) salvaInStorage(SK_BANDI, bandi);   // opzionale, non blocca l'import se assente
 
     try {
-      for (const key of Object.keys(localStorage)) {
+      for (const key of storageKeys()) {
         if (key.startsWith(SK_BANCA_PFX) || key.startsWith(SK_BANCA_CAT_PFX)) {
-          localStorage.removeItem(key);
+          storageRemove(key);
         }
       }
     } catch (e) { console.warn('Pulizia vecchi dati:', e); }
