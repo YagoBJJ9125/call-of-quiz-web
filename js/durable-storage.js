@@ -129,6 +129,11 @@
       if (source.size) initial.push(['cm:backup:pre-durable-storage', JSON.stringify(snapshot)]);
       await transaction(initial);
       rows = [...rows.filter(([k]) => !k.startsWith('cm:')), ...initial];
+    } else if (legacy.size) {
+      // Una vecchia scheda/cache può avere scritto dopo la migrazione.
+      // Non sovrascrivere l'archivio attuale e non cancellare questi residui.
+      const recovery = ['cm:backup:residui-legacy:' + Date.now(), JSON.stringify(Object.fromEntries(legacy))];
+      await transaction([recovery]); rows.push(recovery); api.legacyRecovery = recovery[0];
     }
     memory.clear(); for (const [k, v] of rows) if (k.startsWith('cm:')) memory.set(k, v);
     // Rimuovere la vecchia cache SOLO dopo una copia durevole riuscita.
@@ -143,7 +148,14 @@
         changes.forEach(([k]) => idbKeys.delete(k));
       };
     }
-    ready = true; return true;
+    ready = true;
+    if (api.legacyRecovery) {
+      const notice=document.createElement('div');notice.id='storageLegacyRecovery';notice.setAttribute('role','status');
+      notice.style.cssText='position:fixed;bottom:8px;left:8px;right:8px;z-index:99998;background:#273b50;color:white;padding:14px;border:1px solid #9bb7d3;border-radius:8px';
+      notice.textContent='Trovati dati residui della vecchia versione: sono conservati nella copia completa esportabile da Impostazioni. I progressi attuali non sono stati sostituiti. ';
+      const close=document.createElement('button');close.className='btn';close.textContent='Chiudi';close.onclick=()=>notice.remove();notice.append(close);document.body.append(notice);
+    }
+    return true;
   })();
   window.__storageReady = api.ready;
   // Il bootstrap aggiungerà la sua UI d'errore dopo gli script. Questo ramo

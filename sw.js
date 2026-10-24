@@ -10,7 +10,7 @@
 // Le chiamate IA (Groq/Gemini) e i font Google sono cross-origin e
 // passano dritte alla rete.
 // ═══════════════════════════════════════════════════════
-const CACHE = 'coq-v14';
+const CACHE = 'coq-v15';
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();
@@ -31,7 +31,9 @@ self.addEventListener('fetch', (e) => {
   e.respondWith(
     caches.open(CACHE).then(async (cache) => {
       const cached = await cache.match(e.request);
-      const rete = fetch(e.request).then((res) => {
+      // La nuova cache SW non basta: la cache HTTP può ancora fornire JS
+      // della versione precedente. Rivalidare evita HTML nuovo + storage vecchio.
+      const rete = fetch(e.request, { cache: 'no-cache' }).then((res) => {
         if (res && res.ok) cache.put(e.request, res.clone());
         return res;
       }).catch(() => null);
